@@ -2,22 +2,21 @@ import { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSusan } from '../../hooks/useSusan';
 import { Button, Input } from '../ui';
-import { Moon, Sun, Key, Calendar, HardDrive, Download, Upload, Trash2, CheckCircle2 } from 'lucide-react';
+import { Moon, Sun, Key, Calendar, HardDrive, Download, Upload, Trash2, CheckCircle2, LogOut } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { useGoogleLogin } from '@react-oauth/google';
-import { CalendarAPI } from '../../services/calendarAPI';
+import { GOOGLE_SCOPES } from '../../config';
+import { fetchUserProfile, getStoredProfile, saveSession, signOut } from '../../services/auth';
 
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
   const { initializeSusan, apiKey: currentApiKey } = useSusan();
   const setCalendarConnected = useAppStore(s => s.setCalendarConnected);
   const calendarConnected = useAppStore(s => s.calendarConnected);
-  const googleClientId = useAppStore(s => s.googleClientId);
-  const setGoogleClientId = useAppStore(s => s.setGoogleClientId);
-  
+
   const [apiKey, setApiKey] = useState(currentApiKey || '');
-  const [clientId, setClientId] = useState(googleClientId || '');
-  
+  const profile = getStoredProfile();
+
   const [isSaved, setIsSaved] = useState(false);
 
   const handleSaveAPIKey = () => {
@@ -26,19 +25,15 @@ export function SettingsView() {
     showSaved();
   };
 
-  const handleSaveClientId = () => {
-    setGoogleClientId(clientId);
-    showSaved();
-  };
-
+  // Refresh the Google session/token (also renews Calendar access)
   const login = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      localStorage.setItem('kash_google_token', tokenResponse.access_token);
-      CalendarAPI.setToken(tokenResponse.access_token);
+    onSuccess: async (tokenResponse) => {
+      const p = await fetchUserProfile(tokenResponse.access_token);
+      saveSession(p, tokenResponse.access_token);
       setCalendarConnected(true);
       showSaved();
     },
-    scope: 'https://www.googleapis.com/auth/calendar.events',
+    scope: GOOGLE_SCOPES,
     onError: () => alert('Login Failed')
   });
 
@@ -119,32 +114,29 @@ export function SettingsView() {
           <Calendar size={20} /> Google Calendar
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-          To sync your daily plan with Google Calendar, provide a Client ID from Google Cloud Console configured for Web with redirect URI set to this app's URL.
+          Calendar access is granted with your Google sign-in. If sync stops working
+          (tokens expire after ~1 hour), press Reconnect.
         </p>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: '1 1 300px' }}>
-            <Input 
-              label="Google Client ID" 
-              value={clientId} 
-              onChange={(e) => setClientId(e.target.value)} 
-              placeholder="...apps.googleusercontent.com" 
-            />
-          </div>
-          <Button variant="secondary" onClick={handleSaveClientId}>Save ID</Button>
-          
-          {googleClientId ? (
-            <Button 
-              variant="primary" 
-              onClick={() => login()}
-              icon={calendarConnected ? <CheckCircle2 size={16} /> : undefined}
-            >
-              {calendarConnected ? 'Calendar Connected' : 'Sign in with Google'}
-            </Button>
-          ) : (
-            <Button variant="primary" disabled>
-              Save ID to Connect
-            </Button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {profile && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+              {profile.picture && (
+                <img src={profile.picture} alt="" width={28} height={28} style={{ borderRadius: '50%' }} referrerPolicy="no-referrer" />
+              )}
+              {profile.email}
+            </span>
           )}
+          <Button
+            variant="primary"
+            onClick={() => login()}
+            icon={calendarConnected ? <CheckCircle2 size={16} /> : undefined}
+          >
+            {calendarConnected ? 'Reconnect Calendar' : 'Connect Calendar'}
+          </Button>
+          <div style={{ flex: 1 }} />
+          <Button variant="ghost" icon={<LogOut size={16} />} onClick={signOut}>
+            Sign out
+          </Button>
         </div>
       </section>
 

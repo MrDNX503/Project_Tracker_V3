@@ -5,6 +5,9 @@ import { useSusanStore } from './store/useSusanStore';
 import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { initSusanAI } from './services/susanAI';
+import { GOOGLE_CLIENT_ID } from './config';
+import { getStoredProfile, restoreCalendarToken, type UserProfile } from './services/auth';
+import { LoginPage } from './components/auth/LoginPage';
 import { Layout } from './components/layout';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -41,11 +44,17 @@ function AppContent() {
 export default function App() {
   const { dbReady } = useDatabase();
   const dbError = useAppStore((s) => s.dbError);
-  const googleClientId = useAppStore((s) => s.googleClientId);
+  const setCalendarConnected = useAppStore((s) => s.setCalendarConnected);
   const currentView = useAppStore((s) => s.currentView);
   const setView = useAppStore((s) => s.setView);
-  
+
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(getStoredProfile);
+
+  // Restore Google Calendar token from a previous session
+  useEffect(() => {
+    if (restoreCalendarToken()) setCalendarConnected(true);
+  }, [setCalendarConnected]);
 
   // Initialize theme
   useTheme();
@@ -151,8 +160,8 @@ export default function App() {
   );
 
   return (
-    <GoogleOAuthProvider clientId={googleClientId || 'missing-client-id'}>
-      {appContent}
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      {user ? appContent : <LoginPage onLogin={setUser} />}
     </GoogleOAuthProvider>
   );
 }
