@@ -7,6 +7,8 @@ import { useAppStore } from '../../store/useAppStore';
 import { useGoogleLogin } from '@react-oauth/google';
 import { GOOGLE_SCOPES } from '../../config';
 import { fetchUserProfile, getStoredProfile, saveSession, signOut } from '../../services/auth';
+import { backupNow, restoreFromDrive, getLastBackupTime } from '../../services/driveBackup';
+import { getDB } from '../../db';
 
 export function SettingsView() {
   const { theme, setTheme } = useTheme();
@@ -18,6 +20,63 @@ export function SettingsView() {
   const [profile, setProfile] = useState(getStoredProfile);
 
   const [isSaved, setIsSaved] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [lastBackup, setLastBackup] = useState(getLastBackupTime());
+
+  const handleBackupNow = async () => {
+    setBackupBusy(true);
+    const result = await backupNow();
+    setBackupBusy(false);
+    if (result === 'ok') { setLastBackup(getLastBackupTime()); showSaved(); }
+    else if (result === 'no-session') alert('Tu sesión de Google expiró. Presiona "Reconnect Calendar" y vuelve a intentar.');
+    else alert('El respaldo falló. Revisa la consola para más detalles.');
+  };
+
+  const handleRestore = async () => {
+    if (!window.confirm('Esto REEMPLAZARÁ todos los datos locales con el respaldo de Google Drive. ¿Continuar?')) return;
+    setBackupBusy(true);
+    const result = await restoreFromDrive();
+    setBackupBusy(false);
+    if (result === 'ok') { alert('Datos restaurados. La app se recargará.'); window.location.reload(); }
+    else if (result === 'not-found') alert('No hay ningún respaldo en Google Drive todavía.');
+    else if (result === 'no-session') alert('Tu sesión de Google expiró. Reconéctate primero.');
+    else alert('La restauración falló. Revisa la consola.');
+  };
+
+  const handleExportFile = async () => {
+    const db = await getDB();
+    const dump = await db.exportAllData();
+    const json = JSON.stringify({ version: '3.0.0', appName: 'KashFinance Project Tracker V3', savedAt: new Date().toISOString(), data: dump }, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kashtracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      try {
+        const backup = JSON.parse(await file.text());
+        if (!backup?.data || backup.appName !== 'KashFinance Project Tracker V3') throw new Error('Formato inválido');
+        if (!window.confirm('Esto REEMPLAZARÁ todos los datos locales con el archivo. ¿Continuar?')) return;
+        const db = await getDB();
+        await db.importAllData(backup.data);
+        alert('Datos importados. La app se recargará.');
+        window.location.reload();
+      } catch (e) {
+        alert(`No se pudo importar: ${e instanceof Error ? e.message : e}`);
+      }
+    };
+    input.click();
+  };
 
   const handleSaveAPIKey = () => {
     localStorage.setItem('kash_gemini_api_key', apiKey);
@@ -160,11 +219,19 @@ export function SettingsView() {
           <HardDrive size={20} /> Data Management
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-          Your data is stored locally in your browser using SQLite WASM. You can export it for backup or clear it entirely.
+          Your data is stored locally in your browser using SQLite WASM. Every change
+          is auto-backed up to a single (overwritten) file in your Google Drive.
+          {lastBackup && ` Último respaldo: ${new Date(lastBackup).toLocaleString()}.`}
         </p>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-          <Button variant="secondary" icon={<Download size={16} />}>Export Data (JSON)</Button>
-          <Button variant="secondary" icon={<Upload size={16} />}>Import Data</Button>
+          <Button variant="primary" disabled={backupBusy} onClick={handleBackupNow} icon={<Upload size={16} />}>
+            {backupBusy ? 'Working...' : 'Backup to Drive now'}
+          </Button>
+          <Button variant="secondary" disabled={backupBusy} onClick={handleRestore} icon={<Download size={16} />}>
+            Restore from Drive
+          </Button>
+          <Button variant="secondary" icon={<Download size={16} />} onClick={handleExportFile}>Export Data (JSON)</Button>
+          <Button variant="secondary" icon={<Upload size={16} />} onClick={handleImportFile}>Import Data</Button>
           <div style={{ flex: 1 }} />
           <Button variant="ghost" icon={<Trash2 size={16} />} onClick={clearData} style={{ color: 'var(--color-danger)' }}>
             Erase All Data

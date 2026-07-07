@@ -6,7 +6,7 @@
 // ============================================================
 
 import * as Comlink from 'comlink';
-import { initDatabase, closeDatabase } from './database';
+import { initDatabase, closeDatabase, exec, query } from './database';
 import {
   createProject, getProject, listProjects,
   updateProject, deleteProject, updateProjectProgress,
@@ -52,6 +52,49 @@ const api: DatabaseAPI = {
     console.info(`[Worker] Database ready (VFS: ${vfs})`);
   },
   close: closeDatabase,
+
+  // Backup / restore
+  async exportAllData() {
+    const tables = [
+      'projects', 'milestones', 'tasks', 'progress_logs', 'daily_plans',
+      'reminders', 'susan_conversations', 'settings', 'analytics_snapshots',
+    ];
+    const out: Record<string, unknown[]> = {};
+    for (const t of tables) {
+      out[t] = await query(`SELECT * FROM ${t}`);
+    }
+    return out;
+  },
+
+  async importAllData(data) {
+    // Children first so FK constraints never complain
+    const deleteOrder = [
+      'analytics_snapshots', 'susan_conversations', 'reminders', 'daily_plans',
+      'progress_logs', 'tasks', 'milestones', 'projects', 'settings',
+    ];
+    const insertOrder = [...deleteOrder].reverse();
+
+    await exec('PRAGMA foreign_keys = OFF');
+    try {
+      for (const t of deleteOrder) {
+        await exec(`DELETE FROM ${t}`);
+      }
+      for (const t of insertOrder) {
+        const rows = (data[t] ?? []) as Record<string, unknown>[];
+        for (const row of rows) {
+          const cols = Object.keys(row);
+          if (cols.length === 0) continue;
+          const placeholders = cols.map(() => '?').join(', ');
+          await exec(
+            `INSERT INTO ${t} (${cols.join(', ')}) VALUES (${placeholders})`,
+            cols.map((c) => row[c] as never),
+          );
+        }
+      }
+    } finally {
+      await exec('PRAGMA foreign_keys = ON');
+    }
+  },
 
   // Projects
   createProject,

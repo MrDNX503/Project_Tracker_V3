@@ -7,6 +7,9 @@ import { useTheme } from './hooks/useTheme';
 import { initSusanAI } from './services/susanAI';
 import { GOOGLE_CLIENT_ID } from './config';
 import { restoreCalendarToken } from './services/auth';
+import { scheduleBackup } from './services/driveBackup';
+import { useProjectStore } from './store/useProjectStore';
+import { usePlannerStore } from './store/usePlannerStore';
 import { Layout } from './components/layout';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -53,6 +56,18 @@ export default function App() {
   useEffect(() => {
     if (restoreCalendarToken()) setCalendarConnected(true);
   }, [setCalendarConnected]);
+
+  // Auto-backup to Google Drive: any change in projects/tasks/planner
+  // schedules a debounced upload that OVERWRITES the single backup file.
+  useEffect(() => {
+    if (!dbReady) return;
+    const unsubProjects = useProjectStore.subscribe(() => scheduleBackup());
+    const unsubPlanner = usePlannerStore.subscribe(() => scheduleBackup());
+    return () => {
+      unsubProjects();
+      unsubPlanner();
+    };
+  }, [dbReady]);
 
   // Initialize theme
   useTheme();

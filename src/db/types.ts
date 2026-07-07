@@ -263,4 +263,8 @@ export interface DatabaseAPI {
   getSetting(key: string): Promise<string | null>;
   setSetting(key: string, value: string): Promise<void>;
   getAllSettings(): Promise<Setting[]>;
+
+  // Backup / restore (full database dump)
+  exportAllData(): Promise<Record<string, unknown[]>>;
+  importAllData(data: Record<string, unknown[]>): Promise<void>;
 }

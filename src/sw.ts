@@ -52,7 +52,7 @@ registerRoute(
   })
 );
 
-// Network First caching strategy for API requests (like Gemini if we ever proxy it, though we do direct calls)
+// Network First caching strategy for navigation requests
 registerRoute(
   ({ request }) => request.destination === 'document' || request.mode === 'navigate',
   new NetworkFirst({

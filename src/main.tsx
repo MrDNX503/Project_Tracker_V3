@@ -6,7 +6,6 @@ import App from './App';
 // Register service worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // The coi-serviceworker handles COOP/COEP headers
     // The PWA service worker is registered by vite-plugin-pwa
   });
 }

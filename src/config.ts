@@ -20,7 +20,7 @@ export const GOOGLE_CLIENT_ID: string =
  * Calendar access is granted in the same consent screen.
  */
 export const GOOGLE_SCOPES =
-  'openid email profile https://www.googleapis.com/auth/calendar.events';
+  'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.appdata';
 
 /**
  * Optional allow-list. If non-empty, only these Google accounts
