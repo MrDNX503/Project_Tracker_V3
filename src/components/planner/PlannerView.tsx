@@ -7,8 +7,10 @@ import { Timeline } from './Timeline';
 import { Button, Input } from '../ui';
 import { RefreshCw, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { addDays, getTodayISO } from '../../utils/dates';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 export function PlannerView() {
+  const isMobile = useMediaQuery('(max-width: 900px)');
   const { db } = useDatabase();
   const selectedDate = usePlannerStore(s => s.selectedDate);
   const setSelectedDate = usePlannerStore(s => s.setSelectedDate);
@@ -71,7 +73,7 @@ export function PlannerView() {
   const displayDate = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem', height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '2rem', padding: isMobile ? '0.25rem' : '1rem', height: '100%', minHeight: 0 }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Daily Planner</h1>
@@ -97,9 +99,9 @@ export function PlannerView() {
 
       <WeekOverview selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      <div style={{ display: 'flex', gap: '2rem', flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '1rem' : '2rem', flex: 1, minHeight: 0, overflowY: isMobile ? 'auto' : undefined }}>
         {/* Timeline */}
-        <div className="glass-card" style={{ flex: 2, padding: '1.5rem', overflowY: 'auto' }}>
+        <div className="glass-card" style={{ flex: 2, padding: isMobile ? '1rem' : '1.5rem', overflowY: 'auto', minHeight: isMobile ? '420px' : undefined }}>
           <Timeline plans={dailyPlans} date={selectedDate} />
         </div>
 

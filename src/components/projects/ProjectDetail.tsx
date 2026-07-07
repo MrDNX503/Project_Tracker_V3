@@ -41,7 +41,7 @@ export function ProjectDetail() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxWidth: '1000px', margin: '0 auto' }}>
       {/* Header */}
       <header className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', borderTop: `4px solid ${project.color}` }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button 
               onClick={() => setView('projects')}
@@ -67,7 +67,7 @@ export function ProjectDetail() {
           {project.description || 'No description provided.'}
         </p>
 
-        <div style={{ display: 'flex', gap: '1.5rem', borderTop: '1px solid var(--border-default)', paddingTop: '1rem' }}>
+        <div style={{ display: 'flex', gap: '1.5rem', borderTop: '1px solid var(--border-default)', paddingTop: '1rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
             <CheckCircle2 size={16} />
             <span>{completedTasks}/{projectTasks.length} Tasks</span>

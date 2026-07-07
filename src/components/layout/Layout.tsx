@@ -25,7 +25,9 @@ export interface LayoutProps {
 
 const layoutRoot: CSSProperties = {
   display: 'flex',
-  minHeight: '100vh',
+  height: '100dvh',
+  minHeight: '100dvh',
+  overflow: 'hidden',
   background: 'var(--bg-primary)',
   position: 'relative',
 };
@@ -34,7 +36,8 @@ const mainAreaBase: CSSProperties = {
   flex: 1,
   display: 'flex',
   flexDirection: 'column',
-  minHeight: '100vh',
+  height: '100%',
+  minHeight: 0,
   transition: 'margin-left var(--transition-base)',
   minWidth: 0,
 };

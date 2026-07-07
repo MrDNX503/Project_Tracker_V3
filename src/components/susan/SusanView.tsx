@@ -3,6 +3,7 @@ import { useSusan } from '../../hooks/useSusan';
 import { SusanAvatar } from './SusanAvatar';
 import { ChatBubble } from './ChatBubble';
 import { SusanInsights } from './SusanInsights';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { Button, Input } from '../ui';
 import { Send, Sunrise, Activity, Zap, Check, X } from 'lucide-react';
 import { CalendarAPI } from '../../services/calendarAPI';
@@ -78,11 +79,13 @@ export function SusanView() {
     setExecutingCall(null);
   };
 
+  const isMobile = useMediaQuery('(max-width: 900px)');
+
   return (
-    <div style={{ display: 'flex', gap: '2rem', height: '100%', padding: '1rem' }}>
+    <div style={{ display: 'flex', gap: isMobile ? '0' : '2rem', height: '100%', padding: isMobile ? '0' : '1rem', minHeight: 0 }}>
       {/* Main Chat Area */}
       <div className="glass-card" style={{ flex: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <header style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <header style={{ padding: isMobile ? '0.75rem 1rem' : '1.5rem', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <SusanAvatar state={isThinking ? 'thinking' : 'idle'} size={48} />
           <div>
             <h1 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Susan AI</h1>
@@ -94,7 +97,7 @@ export function SusanView() {
 
         {/* Quick Actions */}
         {isConfigured && (
-          <div style={{ padding: '1rem 1.5rem', display: 'flex', gap: '0.75rem', overflowX: 'auto', borderBottom: '1px solid var(--border-default)' }}>
+          <div style={{ padding: isMobile ? '0.5rem 1rem' : '1rem 1.5rem', display: 'flex', gap: '0.75rem', overflowX: 'auto', borderBottom: '1px solid var(--border-default)' }}>
             <Button variant="secondary" size="sm" icon={<Sunrise size={14} />} onClick={() => getMorningBriefing()}>Morning Briefing</Button>
             <Button variant="secondary" size="sm" icon={<Activity size={14} />} onClick={() => analyzeProductivity()}>Analyze Progress</Button>
             <Button variant="secondary" size="sm" icon={<Zap size={14} />} onClick={() => sendMessage('Give me a quick motivational nudge')}>Motivate Me</Button>
@@ -102,7 +105,7 @@ export function SusanView() {
         )}
 
         {/* Chat Messages */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: 0 }}>
           {messages.length === 0 ? (
             <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-secondary)', maxWidth: '400px' }}>
               <SusanAvatar state="idle" size={80} style={{ margin: '0 auto 1rem auto' }} />
@@ -173,8 +176,8 @@ export function SusanView() {
         </div>
 
         {/* Input Area */}
-        <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border-default)' }}>
-          <form onSubmit={handleSend} style={{ display: 'flex', gap: '1rem' }}>
+        <div style={{ padding: isMobile ? '0.75rem' : '1.5rem', borderTop: '1px solid var(--border-default)' }}>
+          <form onSubmit={handleSend} style={{ display: 'flex', gap: isMobile ? '0.5rem' : '1rem' }}>
             <div style={{ flex: 1 }}>
               <Input 
                 value={inputValue}
@@ -196,10 +199,12 @@ export function SusanView() {
         </div>
       </div>
 
-      {/* Side Panel: Insights */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto', minWidth: '300px', maxWidth: '400px' }}>
-        <SusanInsights />
-      </div>
+      {/* Side Panel: Insights (hidden on mobile — chat takes full width) */}
+      {!isMobile && (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto', minWidth: '300px', maxWidth: '400px' }}>
+          <SusanInsights />
+        </div>
+      )}
     </div>
   );
 }
