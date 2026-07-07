@@ -19,6 +19,7 @@ export function PlannerView() {
   const addDailyPlan = usePlannerStore(s => s.addDailyPlan);
   
   const { isConnected, isSyncing, syncToday } = useCalendarSync();
+  const calendarEvents = usePlannerStore((st) => st.calendarEvents);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('');
@@ -134,6 +135,32 @@ export function PlannerView() {
               </Button>
             )}
           </div>
+
+          {calendarEvents.length > 0 && (
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Google Calendar</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {calendarEvents.map((ev) => {
+                  const fmt = (iso: string) => {
+                    if (!iso) return '';
+                    const d = new Date(iso);
+                    return isNaN(d.getTime()) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  };
+                  const time = fmt(ev.start);
+                  return (
+                    <div key={ev.id} style={{ padding: '0.75rem', backgroundColor: 'var(--bg-primary)', borderRadius: '8px', borderLeft: '3px solid var(--accent-cyan)', border: '1px solid var(--border-default)' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{ev.summary}</span>
+                      {time && (
+                        <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                          {time}{fmt(ev.end) ? ` – ${fmt(ev.end)}` : ''}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="glass-card" style={{ padding: '1.5rem', flex: 1 }}>
             <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Unscheduled Today</h3>
