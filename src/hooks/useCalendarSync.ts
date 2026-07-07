@@ -1,70 +1,47 @@
 // ============================================
-// Calendar Sync Hook
+// Calendar Sync Hook — unified on CalendarAPI
+// (same token as the Google sign-in in Settings)
 // ============================================
 
 import { useCallback } from 'react';
 import { usePlannerStore } from '../store/usePlannerStore';
-import * as calendarService from '../services/googleCalendar';
+import { useAppStore } from '../store/useAppStore';
+import { CalendarAPI } from '../services/calendarAPI';
 
 /**
- * Hook for managing Google Calendar synchronization
+ * Hook for managing Google Calendar synchronization.
+ * Connection state comes from the app-level Google session
+ * (Settings -> Sign in with Google), NOT a separate token client.
  */
 export function useCalendarSync() {
-  const setCalendarConnected = usePlannerStore((s) => s.setCalendarConnected);
+  const calendarConnected = useAppStore((s) => s.calendarConnected);
   const setCalendarSyncing = usePlannerStore((s) => s.setCalendarSyncing);
   const setCalendarEvents = usePlannerStore((s) => s.setCalendarEvents);
   const setLastSyncTime = usePlannerStore((s) => s.setLastSyncTime);
-  const calendarConnected = usePlannerStore((s) => s.calendarConnected);
   const calendarSyncing = usePlannerStore((s) => s.calendarSyncing);
-
-  /**
-   * Initialize Google Calendar connection
-   */
-  const connect = useCallback(async (clientId: string) => {
-    try {
-      await calendarService.loadGISScript();
-      calendarService.initTokenClient(clientId);
-      await calendarService.requestAccessToken();
-      setCalendarConnected(true);
-    } catch (error) {
-      console.error('Calendar connection failed:', error);
-      setCalendarConnected(false);
-      throw error;
-    }
-  }, [setCalendarConnected]);
-
-  /**
-   * Disconnect from Google Calendar
-   */
-  const disconnect = useCallback(() => {
-    calendarService.revokeToken();
-    setCalendarConnected(false);
-    setCalendarEvents([]);
-    setLastSyncTime(null);
-  }, [setCalendarConnected, setCalendarEvents, setLastSyncTime]);
 
   /**
    * Sync events for a specific date range
    */
   const syncEvents = useCallback(async (startDate: Date, endDate: Date) => {
-    if (!calendarService.isAuthenticated()) {
-      console.warn('Not authenticated with Google Calendar');
+    if (!CalendarAPI.hasToken()) {
+      console.warn('[CalendarSync] No Google session token — sign in from Settings');
       return;
     }
 
     setCalendarSyncing(true);
     try {
-      const events = await calendarService.getEventsInRange(startDate, endDate);
+      const events = await CalendarAPI.getEvents(startDate, endDate);
       const mappedEvents = events.map((e) => ({
         id: e.id || '',
         summary: e.summary,
-        start: e.start.dateTime || e.start.date || '',
-        end: e.end.dateTime || e.end.date || '',
+        start: e.start?.dateTime || '',
+        end: e.end?.dateTime || '',
       }));
       setCalendarEvents(mappedEvents);
       setLastSyncTime(new Date().toISOString());
     } catch (error) {
-      console.error('Calendar sync failed:', error);
+      console.error('[CalendarSync] Sync failed (token may have expired — reconnect from Settings):', error);
     } finally {
       setCalendarSyncing(false);
     }
@@ -91,27 +68,15 @@ export function useCalendarSync() {
     timeEnd?: string,
     description?: string
   ) => {
-    if (!calendarService.isAuthenticated()) {
-      throw new Error('Not connected to Google Calendar');
+    if (!CalendarAPI.hasToken()) {
+      throw new Error('Not connected to Google Calendar — sign in from Settings');
     }
-
-    const event: calendarService.CalendarEvent = {
-      summary: title,
-      description,
-      start: timeStart
-        ? { dateTime: `${date}T${timeStart}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
-        : { date },
-      end: timeEnd
-        ? { dateTime: `${date}T${timeEnd}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
-        : { date },
-    };
-
-    return calendarService.createEvent(event);
+    const startDT = timeStart ? new Date(`${date}T${timeStart}:00`) : new Date(`${date}T09:00:00`);
+    const endDT = timeEnd ? new Date(`${date}T${timeEnd}:00`) : new Date(startDT.getTime() + 60 * 60 * 1000);
+    return CalendarAPI.createEvent(title, startDT, endDT, description);
   }, []);
 
   return {
-    connect,
-    disconnect,
     syncEvents,
     syncToday,
     createCalendarEvent,

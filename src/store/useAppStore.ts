@@ -6,6 +6,29 @@ import { create } from 'zustand';
 
 export type AppView = 'dashboard' | 'projects' | 'project-detail' | 'planner' | 'susan' | 'analytics' | 'settings';
 
+// --- Session navigation persistence -------------------------------
+// sessionStorage survives minimizing / switching apps (PWA included)
+// but is cleared when the app/tab is fully closed — exactly the
+// "resume where I left off unless I quit" behavior we want.
+const NAV_VIEW_KEY = 'kash_nav_view';
+const NAV_PROJECT_KEY = 'kash_nav_project';
+
+function getInitialView(): AppView {
+  const v = sessionStorage.getItem(NAV_VIEW_KEY) as AppView | null;
+  const valid: AppView[] = ['dashboard', 'projects', 'project-detail', 'planner', 'susan', 'analytics', 'settings'];
+  return v && valid.includes(v) ? v : 'dashboard';
+}
+
+function getInitialProject(): string | null {
+  return sessionStorage.getItem(NAV_PROJECT_KEY);
+}
+
+function persistNav(view: AppView, projectId: string | null): void {
+  sessionStorage.setItem(NAV_VIEW_KEY, view);
+  if (projectId) sessionStorage.setItem(NAV_PROJECT_KEY, projectId);
+  else sessionStorage.removeItem(NAV_PROJECT_KEY);
+}
+
 interface AppState {
   // Navigation
   currentView: AppView;
@@ -41,8 +64,8 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set) => ({
   // Initial state
-  currentView: 'dashboard',
-  selectedProjectId: null,
+  currentView: getInitialView(),
+  selectedProjectId: getInitialProject(),
   sidebarExpanded: false,
   commandPaletteOpen: false,
   dbReady: false,
@@ -52,10 +75,18 @@ export const useAppStore = create<AppState>((set) => ({
   calendarConnected: !!localStorage.getItem('kash_google_token'),
 
   // Actions
-  setView: (view) => set({ currentView: view, selectedProjectId: null }),
-  selectProject: (projectId) => set({ selectedProjectId: projectId }),
-  openProjectDetail: (projectId) =>
-    set({ currentView: 'project-detail', selectedProjectId: projectId }),
+  setView: (view) => {
+    persistNav(view, null);
+    set({ currentView: view, selectedProjectId: null });
+  },
+  selectProject: (projectId) => {
+    if (projectId) sessionStorage.setItem(NAV_PROJECT_KEY, projectId);
+    set({ selectedProjectId: projectId });
+  },
+  openProjectDetail: (projectId) => {
+    persistNav('project-detail', projectId);
+    set({ currentView: 'project-detail', selectedProjectId: projectId });
+  },
   toggleSidebar: () => set((s) => ({ sidebarExpanded: !s.sidebarExpanded })),
   setSidebarExpanded: (expanded) => set({ sidebarExpanded: expanded }),
   toggleCommandPalette: () =>
