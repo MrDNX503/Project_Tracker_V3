@@ -6,8 +6,7 @@ import { useDatabase } from './hooks/useDatabase';
 import { useTheme } from './hooks/useTheme';
 import { initSusanAI } from './services/susanAI';
 import { GOOGLE_CLIENT_ID } from './config';
-import { getStoredProfile, restoreCalendarToken, type UserProfile } from './services/auth';
-import { LoginPage } from './components/auth/LoginPage';
+import { restoreCalendarToken } from './services/auth';
 import { Layout } from './components/layout';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { DashboardView } from './components/dashboard/DashboardView';
@@ -49,7 +48,6 @@ export default function App() {
   const setView = useAppStore((s) => s.setView);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(getStoredProfile);
 
   // Restore Google Calendar token from a previous session
   useEffect(() => {
@@ -161,7 +159,7 @@ export default function App() {
 
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      {user ? appContent : <LoginPage onLogin={setUser} />}
+      {appContent}
     </GoogleOAuthProvider>
   );
 }

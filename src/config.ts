@@ -13,7 +13,7 @@
  */
 export const GOOGLE_CLIENT_ID: string =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ??
-  'PASTE_YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+  '134015480447-radtnle53vnujkbvbgs19erm305j5p0b.apps.googleusercontent.com';
 
 /**
  * OAuth scopes requested at login.

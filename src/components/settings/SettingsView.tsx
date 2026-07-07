@@ -15,7 +15,7 @@ export function SettingsView() {
   const calendarConnected = useAppStore(s => s.calendarConnected);
 
   const [apiKey, setApiKey] = useState(currentApiKey || '');
-  const profile = getStoredProfile();
+  const [profile, setProfile] = useState(getStoredProfile);
 
   const [isSaved, setIsSaved] = useState(false);
 
@@ -28,10 +28,16 @@ export function SettingsView() {
   // Refresh the Google session/token (also renews Calendar access)
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      const p = await fetchUserProfile(tokenResponse.access_token);
-      saveSession(p, tokenResponse.access_token);
-      setCalendarConnected(true);
-      showSaved();
+      try {
+        const p = await fetchUserProfile(tokenResponse.access_token);
+        saveSession(p, tokenResponse.access_token);
+        setProfile(p);
+        setCalendarConnected(true);
+        showSaved();
+      } catch (e) {
+        console.error('[Auth] Post-login error:', e);
+        alert(`Login OK pero falló al obtener el perfil: ${e instanceof Error ? e.message : e}`);
+      }
     },
     scope: GOOGLE_SCOPES,
     onError: () => alert('Login Failed')
@@ -114,8 +120,10 @@ export function SettingsView() {
           <Calendar size={20} /> Google Calendar
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
-          Calendar access is granted with your Google sign-in. If sync stops working
-          (tokens expire after ~1 hour), press Reconnect.
+          Sign in with Google to sync your daily plan with Google Calendar.
+          One sign-in grants everything — no manual configuration. If sync stops
+          working (tokens expire after ~1 hour), press Reconnect. Your password
+          is managed by Google, not by this app.
         </p>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {profile && (
@@ -131,12 +139,18 @@ export function SettingsView() {
             onClick={() => login()}
             icon={calendarConnected ? <CheckCircle2 size={16} /> : undefined}
           >
-            {calendarConnected ? 'Reconnect Calendar' : 'Connect Calendar'}
+            {profile
+              ? (calendarConnected ? 'Reconnect Calendar' : 'Connect Calendar')
+              : 'Sign in with Google'}
           </Button>
-          <div style={{ flex: 1 }} />
-          <Button variant="ghost" icon={<LogOut size={16} />} onClick={signOut}>
-            Sign out
-          </Button>
+          {profile && (
+            <>
+              <div style={{ flex: 1 }} />
+              <Button variant="ghost" icon={<LogOut size={16} />} onClick={signOut}>
+                Sign out
+              </Button>
+            </>
+          )}
         </div>
       </section>
 
