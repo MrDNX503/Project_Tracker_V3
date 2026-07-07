@@ -123,9 +123,12 @@ export function formatDateTime(dateStr: string): string {
  * Add days to a date string
  */
 export function addDays(dateStr: string, days: number): string {
-  const date = new Date(dateStr);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().split('T')[0];
+  // Parse as LOCAL date — new Date('YYYY-MM-DD') would parse as UTC
+  // and shift the day in negative-offset timezones.
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d + days);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /**

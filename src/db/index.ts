@@ -9,7 +9,6 @@ import * as Comlink from 'comlink';
 import type { DatabaseAPI } from './types';
 
 export type * from './types';
-export * from './queries';
 
 let dbProxy: Comlink.Remote<DatabaseAPI> | null = null;
 let worker: Worker | null = null;

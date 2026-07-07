@@ -224,6 +224,7 @@ export interface DatabaseAPI {
   createDailyPlan(data: CreateDailyPlan): Promise<DailyPlan>;
   getDailyPlan(id: string): Promise<DailyPlan | null>;
   listDailyPlansByDate(date: string): Promise<DailyPlan[]>;
+  listDailyPlans(date: string): Promise<DailyPlan[]>;
   listDailyPlansByRange(startDate: string, endDate: string): Promise<DailyPlan[]>;
   updateDailyPlan(id: string, data: UpdateDailyPlan): Promise<DailyPlan | null>;
   deleteDailyPlan(id: string): Promise<boolean>;

@@ -124,6 +124,7 @@ const api: DatabaseAPI = {
   createDailyPlan,
   getDailyPlan,
   listDailyPlansByDate,
+  listDailyPlans: listDailyPlansByDate,
   listDailyPlansByRange,
   updateDailyPlan,
   deleteDailyPlan,

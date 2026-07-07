@@ -71,6 +71,11 @@ export class CalendarAPI {
         dateTime: endTime.toISOString(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
+      // Google Calendar sends the notification (10 min before)
+      reminders: {
+        useDefault: false,
+        overrides: [{ method: 'popup', minutes: 10 }],
+      },
     };
 
     const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {

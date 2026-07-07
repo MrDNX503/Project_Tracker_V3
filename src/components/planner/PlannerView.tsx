@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDatabase } from '../../hooks/useDatabase';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { useCalendarSync } from '../../hooks/useCalendarSync';
+import { CalendarAPI } from '../../services/calendarAPI';
 import { WeekOverview } from './WeekOverview';
 import { Timeline } from './Timeline';
 import { Button, Input } from '../ui';
@@ -102,6 +103,24 @@ export function PlannerView() {
         time_end
       });
       addDailyPlan(plan);
+
+      // Mirror timed tasks to Google Calendar so it sends the
+      // notification (10 min before) — even with the PWA closed.
+      if (time_start && CalendarAPI.hasToken()) {
+        try {
+          const startDT = new Date(`${selectedDate}T${time_start}:00`);
+          const endDT = time_end
+            ? new Date(`${selectedDate}T${time_end}:00`)
+            : new Date(startDT.getTime() + 60 * 60 * 1000);
+          const event = await CalendarAPI.createEvent(newTaskTitle, startDT, endDT, 'Created from Project Tracker V3');
+          if (event?.id) {
+            // Link it so Sync Calendar never re-imports it as a duplicate
+            await db.updateDailyPlan(plan.id, { calendar_event_id: event.id });
+          }
+        } catch (err) {
+          console.warn('[Planner] Could not mirror task to Google Calendar (token expired?):', err);
+        }
+      }
       setNewTaskTitle('');
       setNewTaskTime('');
       setIsAdding(false);
@@ -110,7 +129,7 @@ export function PlannerView() {
     }
   };
 
-  const displayDate = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const displayDate = new Date(`${selectedDate}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '2rem', padding: isMobile ? '0.25rem' : '1rem', height: '100%', minHeight: 0 }}>
@@ -175,7 +194,7 @@ export function PlannerView() {
             )}
           </div>
 
-          {calendarEvents.length > 0 && (
+          {calendarEvents.length > 0 && selectedDate === getTodayISO() && (
             <div className="glass-card" style={{ padding: '1.5rem' }}>
               <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Google Calendar</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { usePlannerStore } from '../../store/usePlannerStore';
 import { useAppStore } from '../../store/useAppStore';
+import { useDatabase } from '../../hooks/useDatabase';
 import { getProjectStats, calculateStreak } from '../../utils/analytics';
 import { getTimeGreeting, getTodayISO } from '../../utils/dates';
 import { StatsGrid } from './StatsGrid';
@@ -19,10 +20,36 @@ export function DashboardView() {
   const today = getTodayISO();
 
   const [greeting, setGreeting] = useState('');
+  const { db } = useDatabase();
+  const setProjects = useProjectStore((s) => s.setProjects);
+  const setTasks = useProjectStore((s) => s.setTasks);
+  const setProgressLogs = useProjectStore((s) => s.setProgressLogs);
+  const setDailyPlans = usePlannerStore((s) => s.setDailyPlans);
 
   useEffect(() => {
     setGreeting(getTimeGreeting());
   }, []);
+
+  // Load dashboard data (projects, tasks, logs, today's plan)
+  useEffect(() => {
+    if (!db) return;
+    (async () => {
+      try {
+        const [projs, allTasks, logs, plans] = await Promise.all([
+          db.listProjects(),
+          db.listTasks(),
+          db.listRecentProgressLogs(20),
+          db.listDailyPlans(today),
+        ]);
+        setProjects(projs);
+        setTasks(allTasks);
+        setProgressLogs(logs);
+        setDailyPlans(plans);
+      } catch (err) {
+        console.error('[Dashboard] Failed to load data:', err);
+      }
+    })();
+  }, [db, today, setProjects, setTasks, setProgressLogs, setDailyPlans]);
 
   const stats = getProjectStats(projects);
   const todayTasksCount = dailyPlans.filter((p) => p.plan_date === today).length;

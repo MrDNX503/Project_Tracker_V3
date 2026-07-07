@@ -1,16 +1,20 @@
 // ============================================
 // Database Connection Hook
 // ============================================
+// IMPORTANT: all queries run inside the Web Worker (via Comlink).
+// This hook exposes the worker PROXY — never call the query
+// functions from src/db/queries on the main thread.
 
 import { useEffect, useCallback } from 'react';
 import { useAppStore } from '../store/useAppStore';
+import type { getDB } from '../db';
 
-// We'll dynamically import the DB module to avoid SSR issues
-let dbInstance: typeof import('../db') | null = null;
+type WorkerDB = Awaited<ReturnType<typeof getDB>>;
+
+let dbInstance: WorkerDB | null = null;
 
 /**
- * Hook that provides access to the database layer
- * Handles initialization and exposes query functions
+ * Hook that provides access to the database layer (worker proxy)
  */
 export function useDatabase() {
   const dbReady = useAppStore((s) => s.dbReady);
@@ -21,9 +25,8 @@ export function useDatabase() {
     if (dbInstance) return;
 
     try {
-      const db = await import('../db');
-      await db.getDB();
-      dbInstance = db;
+      const mod = await import('../db');
+      dbInstance = await mod.getDB();
       setDbReady(true);
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown DB error';
