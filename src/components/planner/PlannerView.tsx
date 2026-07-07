@@ -37,6 +37,45 @@ export function PlannerView() {
     load();
   }, [db, selectedDate, setDailyPlans]);
 
+  /**
+   * Sync Google Calendar events and import them into the tracker's
+   * daily plan as read-only calendar blocks (no duplicates: matched
+   * by calendar_event_id).
+   */
+  const handleSync = async () => {
+    const events = await syncToday();
+    if (!db || !events || events.length === 0) return;
+
+    const hhmm = (iso: string) => {
+      const d = new Date(iso);
+      return isNaN(d.getTime()) ? undefined : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    };
+
+    try {
+      const today = getTodayISO();
+      const existing = await db.listDailyPlans(today);
+      const known = new Set(existing.map((p) => p.calendar_event_id).filter(Boolean));
+
+      for (const ev of events) {
+        if (!ev.id || known.has(ev.id)) continue;
+        await db.createDailyPlan({
+          plan_date: today,
+          title: ev.summary || '(sin título)',
+          time_start: ev.start ? hhmm(ev.start) ?? null : null,
+          time_end: ev.end ? hhmm(ev.end) ?? null : null,
+          is_calendar_event: 1,
+          calendar_event_id: ev.id,
+        });
+      }
+
+      // Refresh the plans for the date currently on screen
+      const plans = await db.listDailyPlans(selectedDate);
+      setDailyPlans(plans);
+    } catch (err) {
+      console.error('[Planner] Failed to import calendar events:', err);
+    }
+  };
+
   const handlePrevDay = () => setSelectedDate(addDays(selectedDate, -1));
   const handleNextDay = () => setSelectedDate(addDays(selectedDate, 1));
   const handleToday = () => setSelectedDate(getTodayISO());
@@ -90,7 +129,7 @@ export function PlannerView() {
           <Button 
             variant="secondary" 
             icon={<RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />} 
-            onClick={syncToday}
+            onClick={handleSync}
             disabled={!isConnected || isSyncing}
           >
             {isConnected ? 'Sync Calendar' : 'Calendar not connected'}

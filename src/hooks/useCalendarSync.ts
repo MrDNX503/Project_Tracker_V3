@@ -26,7 +26,7 @@ export function useCalendarSync() {
   const syncEvents = useCallback(async (startDate: Date, endDate: Date) => {
     if (!CalendarAPI.hasToken()) {
       console.warn('[CalendarSync] No Google session token — sign in from Settings');
-      return;
+      return [];
     }
 
     setCalendarSyncing(true);
@@ -40,8 +40,10 @@ export function useCalendarSync() {
       }));
       setCalendarEvents(mappedEvents);
       setLastSyncTime(new Date().toISOString());
+      return mappedEvents;
     } catch (error) {
       console.error('[CalendarSync] Sync failed (token may have expired — reconnect from Settings):', error);
+      return [];
     } finally {
       setCalendarSyncing(false);
     }
