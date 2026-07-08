@@ -321,15 +321,11 @@ export async function sendFunctionResponseToSusan(
 ): Promise<ChatResponse> {
   if (!genAI) return { error: 'AI not configured' };
 
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    systemInstruction: SUSAN_SYSTEM_PROMPT,
-    tools: [{ functionDeclarations: SUSAN_TOOLS }]
-  });
-
-  // Add function response to history
+  // Function responses MUST use role 'function' (not 'user') in the
+  // Gemini API — otherwise: "Content with role 'user' can't contain
+  // 'function response' part".
   chatHistory.push({
-    role: 'user',
+    role: 'function',
     parts: [{
       functionResponse: {
         name: functionName,
@@ -338,17 +334,24 @@ export async function sendFunctionResponseToSusan(
     }]
   });
 
-  try {
-    const chat = model.startChat({
-      history: chatHistory.slice(0, -1),
+  const generateWith = async (modelName: string): Promise<GenerateContentResult> => {
+    const model = genAI!.getGenerativeModel({
+      model: modelName,
+      systemInstruction: SUSAN_SYSTEM_PROMPT,
+      tools: [{ functionDeclarations: SUSAN_TOOLS }]
     });
+    return model.generateContent({ contents: chatHistory });
+  };
 
-    const result = await chat.sendMessage([{
-      functionResponse: {
-        name: functionName,
-        response: responseObj
-      }
-    }]);
+  try {
+    let result: GenerateContentResult;
+    try {
+      result = await generateWith(GEMINI_MODEL);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : '';
+      if (!isRateLimitError(m)) throw err;
+      result = await generateWith(GEMINI_FALLBACK_MODEL);
+    }
 
     const response = result.response;
     const functionCall = response.functionCalls()?.[0];
