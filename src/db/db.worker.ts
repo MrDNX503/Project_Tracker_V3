@@ -79,10 +79,13 @@ const api: DatabaseAPI = {
       for (const t of deleteOrder) {
         await exec(`DELETE FROM ${t}`);
       }
+      const SAFE_COL = /^[a-z0-9_]+$/i;
       for (const t of insertOrder) {
         const rows = (data[t] ?? []) as Record<string, unknown>[];
         for (const row of rows) {
-          const cols = Object.keys(row);
+          // Column names come from the backup file — validate them to
+          // prevent SQL injection via a crafted/tampered backup.
+          const cols = Object.keys(row).filter((c) => SAFE_COL.test(c));
           if (cols.length === 0) continue;
           const placeholders = cols.map(() => '?').join(', ');
           await exec(

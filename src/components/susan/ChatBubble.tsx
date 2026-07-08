@@ -9,19 +9,48 @@ interface ChatBubbleProps {
 export function ChatBubble({ message }: ChatBubbleProps) {
   const isUser = message.role === 'user';
 
-  // Basic markdown parsing for links and bold text
-  const parseContent = (text: string) => {
-    // This is a simple parser, for a real app consider marked or react-markdown
-    let parsed = text;
-    // Replace **bold** with <strong>bold</strong>
-    parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Replace markdown links with actual links
-    parsed = parsed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent-primary)">$1</a>');
-    // Replace newlines with <br />
-    parsed = parsed.replace(/\n/g, '<br />');
-    
-    return <div dangerouslySetInnerHTML={{ __html: parsed }} />;
+  // SAFE markdown-lite parser: builds React elements instead of raw HTML
+  // (never use dangerouslySetInnerHTML with model/user content — XSS).
+  const parseInline = (text: string, keyBase: string) => {
+    const nodes: React.ReactNode[] = [];
+    // Tokenize **bold** and [label](url)
+    const re = /\*\*(.+?)\*\*|\[([^\]]+)\]\(([^)]+)\)/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    let k = 0;
+    while ((match = re.exec(text)) !== null) {
+      if (match.index > last) nodes.push(text.slice(last, match.index));
+      if (match[1] !== undefined) {
+        nodes.push(<strong key={`${keyBase}-b${k++}`}>{match[1]}</strong>);
+      } else {
+        const url = match[3];
+        // Only allow http/https links (blocks javascript:, data:, etc.)
+        if (/^https?:\/\//i.test(url)) {
+          nodes.push(
+            <a key={`${keyBase}-a${k++}`} href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)' }}>
+              {match[2]}
+            </a>
+          );
+        } else {
+          nodes.push(match[2]);
+        }
+      }
+      last = re.lastIndex;
+    }
+    if (last < text.length) nodes.push(text.slice(last));
+    return nodes;
   };
+
+  const parseContent = (text: string) => (
+    <div>
+      {text.split('\n').map((line, i) => (
+        <span key={i}>
+          {i > 0 && <br />}
+          {parseInline(line, `l${i}`)}
+        </span>
+      ))}
+    </div>
+  );
 
   return (
     <div style={{
