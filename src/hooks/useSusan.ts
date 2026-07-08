@@ -204,18 +204,25 @@ export function useSusan() {
     setIsThinking(true);
     try {
       const response = await susanAI.sendFunctionResponseToSusan(functionName, responseObj);
-      
+
+      // If the ACTION succeeded but the follow-up chat failed, don't show
+      // a raw error — the important part (the action) already worked.
+      const actionOk = responseObj?.status === 'success';
+      const softError = actionOk
+        ? `✅ ${responseObj.message ?? 'Acción completada.'}`
+        : response.error;
+
       const susanMessage: SusanMessage = {
         id: crypto.randomUUID(),
         role: 'susan',
-        content: response.error || response.text || (response.functionCall ? 'I need to perform another action.' : ''),
+        content: (response.error ? softError : response.text) || (response.functionCall ? 'I need to perform another action.' : '') || '✅',
         functionCall: response.functionCall,
         timestamp: new Date().toISOString(),
         mood: 'neutral',
         actions: [],
         references: [],
         isStreaming: false,
-        error: response.error || null
+        error: response.error && !actionOk ? response.error : null
       };
 
       addMessage(susanMessage);
@@ -225,7 +232,7 @@ export function useSusan() {
     } finally {
       setIsThinking(false);
     }
-  }, [addMessage, setIsThinking]);
+  }, [addMessage, setIsThinking, persistMessage]);
 
   return {
     sendMessage,
