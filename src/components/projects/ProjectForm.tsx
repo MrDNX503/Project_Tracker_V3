@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { useState } from 'react';
 import { useDatabase } from '../../hooks/useDatabase';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -10,6 +11,7 @@ interface ProjectFormProps {
 }
 
 export function ProjectForm({ project, onClose }: ProjectFormProps) {
+  const t = useT();
   const { db } = useDatabase();
   const addProject = useProjectStore((s) => s.addProject);
   const updateProjectStore = useProjectStore((s) => s.updateProject);
@@ -62,7 +64,7 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
   const icons = ['📁', '🚀', '💻', '📱', '🎨', '📚', '📈', '💰', '🏠', '✨'];
 
   return (
-    <Modal title={project ? 'Edit Project' : 'New Project'} onClose={onClose} width="500px">
+    <Modal title={project ? t('projects.edit') : t('projects.new')} onClose={onClose} width="500px">
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         
         {error && (
@@ -72,7 +74,7 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
         )}
 
         <Input
-          label="Project Name"
+          label={t('projects.name')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g., Website Redesign"
@@ -81,7 +83,7 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
         />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>Description</label>
+          <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{t('projects.description')}</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -103,7 +105,7 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>Status</label>
+            <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{t('projects.status')}</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as Project['status'])}
@@ -117,15 +119,15 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
                 outline: 'none',
               }}
             >
-              <option value="planning">Planning</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="completed">Completed</option>
+              <option value="planning">{t('projects.status.planning')}</option>
+              <option value="active">{t('projects.status.active')}</option>
+              <option value="paused">{t('projects.status.paused')}</option>
+              <option value="completed">{t('projects.status.completed')}</option>
             </select>
           </div>
           
           <Input
-            label="Target Date"
+            label={t('projects.targetdate')}
             type="date"
             value={targetDate}
             onChange={(e) => setTargetDate(e.target.value)}
@@ -133,7 +135,7 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>Icon & Color</label>
+          <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-primary)' }}>{t('projects.iconcolor')}</label>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '0.5rem', backgroundColor: 'var(--bg-primary)', borderRadius: '8px' }}>
               {icons.map(i => (
@@ -142,13 +144,16 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
                   type="button"
                   onClick={() => setIcon(i)}
                   style={{
-                    background: icon === i ? 'var(--bg-surface)' : 'transparent',
-                    border: 'none',
+                    background: icon === i ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
+                    border: icon === i ? '2px solid var(--accent-primary)' : '2px solid transparent',
                     fontSize: '1.25rem',
                     padding: '0.25rem',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transform: icon === i ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'all 150ms ease'
                   }}
+                  aria-pressed={icon === i}
                 >
                   {i}
                 </button>
@@ -176,9 +181,9 @@ export function ProjectForm({ project, onClose }: ProjectFormProps) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
-          <Button variant="ghost" onClick={onClose} type="button">Cancel</Button>
+          <Button variant="ghost" onClick={onClose} type="button">{t('projects.cancel')}</Button>
           <Button variant="primary" type="submit" loading={isSubmitting}>
-            {project ? 'Save Changes' : 'Create Project'}
+            {project ? t('projects.save') : t('projects.create')}
           </Button>
         </div>
       </form>

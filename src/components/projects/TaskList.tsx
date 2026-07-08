@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { useState } from 'react';
 import { useDatabase } from '../../hooks/useDatabase';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -12,6 +13,7 @@ interface TaskListProps {
 }
 
 export function TaskList({ projectId, tasks }: TaskListProps) {
+  const t = useT();
   const { db } = useDatabase();
   const addTask = useProjectStore(s => s.addTask);
   
@@ -43,8 +45,8 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>Tasks</h2>
-        <Button icon={<Plus size={16} />} onClick={() => setIsAdding(true)}>Add Task</Button>
+        <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>{t('tasks.title')}</h2>
+        <Button icon={<Plus size={16} />} onClick={() => setIsAdding(true)}>{t('tasks.add')}</Button>
       </div>
 
       {isAdding && (
@@ -53,13 +55,13 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
             <Input 
               value={newTaskTitle}
               onChange={e => setNewTaskTitle(e.target.value)}
-              placeholder="What needs to be done?"
+              placeholder={t('tasks.placeholder')}
               autoFocus
             />
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-            <Button variant="ghost" onClick={() => setIsAdding(false)} type="button">Cancel</Button>
-            <Button variant="primary" type="submit">Save</Button>
+            <Button variant="ghost" onClick={() => setIsAdding(false)} type="button">{t('common.cancel')}</Button>
+            <Button variant="primary" type="submit">{t('common.save')}</Button>
           </div>
         </form>
       )}
@@ -67,13 +69,13 @@ export function TaskList({ projectId, tasks }: TaskListProps) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
         {todoTasks.map(task => <TaskItem key={task.id} task={task} />)}
         {todoTasks.length === 0 && !isAdding && (
-          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>No active tasks.</p>
+          <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>{t('tasks.none')}</p>
         )}
       </div>
 
       {doneTasks.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
-          <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>Completed</h3>
+          <h3 style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>{t('tasks.completed')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', opacity: 0.7 }}>
             {doneTasks.map(task => <TaskItem key={task.id} task={task} />)}
           </div>

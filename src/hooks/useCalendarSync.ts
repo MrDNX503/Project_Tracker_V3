@@ -35,7 +35,8 @@ export function useCalendarSync() {
       const mappedEvents = events.map((e) => ({
         id: e.id || '',
         summary: e.summary,
-        start: e.start?.dateTime || '',
+        // Timed events use dateTime; all-day events use date (YYYY-MM-DD)
+        start: e.start?.dateTime || (e.start as { date?: string })?.date || '',
         end: e.end?.dateTime || '',
       }));
       setCalendarEvents(mappedEvents);

@@ -22,6 +22,18 @@ let vfsName: string = '';
 // wa-sqlite type alias
 type SQLiteAPI = ReturnType<typeof SQLite.Factory>;
 
+// ----- Serialization queue -----
+// The Asyncify build of wa-sqlite is NOT reentrant: two statements
+// running concurrently corrupt WASM memory ("memory access out of
+// bounds"). Every DB operation must go through this queue.
+let opQueue: Promise<unknown> = Promise.resolve();
+
+function serialize<T>(fn: () => Promise<T>): Promise<T> {
+  const run = opQueue.then(fn, fn);
+  opQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
 // ----- Helpers -----
 
 function ensureDb(): { sqlite3: SQLiteAPI; db: number } {
@@ -34,7 +46,11 @@ function ensureDb(): { sqlite3: SQLiteAPI; db: number } {
 /**
  * Execute a SQL statement that returns no rows (INSERT / UPDATE / DELETE / DDL).
  */
-export async function exec(sql: string, params: SQLiteCompatibleType[] = []): Promise<void> {
+export function exec(sql: string, params: SQLiteCompatibleType[] = []): Promise<void> {
+  return serialize(() => execUnsafe(sql, params));
+}
+
+async function execUnsafe(sql: string, params: SQLiteCompatibleType[] = []): Promise<void> {
   const { sqlite3: api, db: dbHandle } = ensureDb();
   const str = api.str_new(dbHandle, sql);
   try {
@@ -57,7 +73,11 @@ export async function exec(sql: string, params: SQLiteCompatibleType[] = []): Pr
 /**
  * Execute multiple SQL statements separated by semicolons (used for schema init).
  */
-export async function execMulti(sql: string): Promise<void> {
+export function execMulti(sql: string): Promise<void> {
+  return serialize(() => execMultiUnsafe(sql));
+}
+
+async function execMultiUnsafe(sql: string): Promise<void> {
   const { sqlite3: api, db: dbHandle } = ensureDb();
   const str = api.str_new(dbHandle, sql);
   try {
@@ -81,7 +101,14 @@ export async function execMulti(sql: string): Promise<void> {
 /**
  * Execute a SQL query and return rows as an array of objects.
  */
-export async function query<T = Record<string, unknown>>(
+export function query<T = Record<string, unknown>>(
+  sql: string,
+  params: SQLiteCompatibleType[] = [],
+): Promise<T[]> {
+  return serialize(() => queryUnsafe<T>(sql, params));
+}
+
+async function queryUnsafe<T = Record<string, unknown>>(
   sql: string,
   params: SQLiteCompatibleType[] = [],
 ): Promise<T[]> {

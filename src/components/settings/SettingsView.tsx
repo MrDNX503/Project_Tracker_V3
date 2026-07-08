@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useT, useLangStore } from '../../i18n';
+import { Globe } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { useSusan } from '../../hooks/useSusan';
 import { Button, Input } from '../ui';
@@ -11,6 +13,9 @@ import { backupNow, restoreFromDrive, getLastBackupTime } from '../../services/d
 import { getDB } from '../../db';
 
 export function SettingsView() {
+  const t = useT();
+  const lang = useLangStore((s) => s.lang);
+  const setLang = useLangStore((s) => s.setLang);
   const { theme, setTheme } = useTheme();
   const { initializeSusan, apiKey: currentApiKey } = useSusan();
   const setCalendarConnected = useAppStore(s => s.setCalendarConnected);
@@ -118,20 +123,20 @@ export function SettingsView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem', maxWidth: '800px', margin: '0 auto', width: '100%' }}>
       <header>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Settings</h1>
-        <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>Manage your preferences and integrations.</p>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{t('settings.title')}</h1>
+        <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>{t('settings.subtitle')}</p>
       </header>
 
       {isSaved && (
         <div style={{ padding: '1rem', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--color-success)', borderRadius: '8px', textAlign: 'center' }}>
-          Settings saved successfully!
+          {t('settings.saved')}
         </div>
       )}
 
       {/* Appearance */}
       <section className="glass-card" style={{ padding: '1.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sun size={20} /> Appearance
+          <Sun size={20} /> {t('settings.appearance')}
         </h2>
         <div style={{ display: 'flex', gap: '1rem' }}>
           <Button 
@@ -147,6 +152,24 @@ export function SettingsView() {
             icon={<Sun size={16} />}
           >
             Crystal Light
+          </Button>
+        </div>
+      </section>
+
+      {/* Language */}
+      <section className="glass-card" style={{ padding: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Globe size={20} /> {t('settings.language')}
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
+          {t('settings.language.desc')}
+        </p>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <Button variant={lang === 'es' ? 'primary' : 'secondary'} onClick={() => setLang('es')}>
+            Español
+          </Button>
+          <Button variant={lang === 'en' ? 'primary' : 'secondary'} onClick={() => setLang('en')}>
+            English
           </Button>
         </div>
       </section>
@@ -199,14 +222,14 @@ export function SettingsView() {
             icon={calendarConnected ? <CheckCircle2 size={16} /> : undefined}
           >
             {profile
-              ? (calendarConnected ? 'Reconnect Calendar' : 'Connect Calendar')
-              : 'Sign in with Google'}
+              ? (calendarConnected ? t('settings.calendar.connected') : t('settings.calendar.notconnected'))
+              : t('settings.calendar.connect')}
           </Button>
           {profile && (
             <>
               <div style={{ flex: 1 }} />
               <Button variant="ghost" icon={<LogOut size={16} />} onClick={signOut}>
-                Sign out
+                {t('settings.signout')}
               </Button>
             </>
           )}
@@ -216,7 +239,7 @@ export function SettingsView() {
       {/* Data Management */}
       <section className="glass-card" style={{ padding: '1.5rem' }}>
         <h2 style={{ fontSize: '1.25rem', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <HardDrive size={20} /> Data Management
+          <HardDrive size={20} /> {t('settings.data')}
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1rem' }}>
           Your data is stored locally in your browser using SQLite WASM. Every change
@@ -225,16 +248,16 @@ export function SettingsView() {
         </p>
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
           <Button variant="primary" disabled={backupBusy} onClick={handleBackupNow} icon={<Upload size={16} />}>
-            {backupBusy ? 'Working...' : 'Backup to Drive now'}
+            {backupBusy ? '...' : t('settings.backupnow')}
           </Button>
           <Button variant="secondary" disabled={backupBusy} onClick={handleRestore} icon={<Download size={16} />}>
-            Restore from Drive
+            {t('settings.restore')}
           </Button>
-          <Button variant="secondary" icon={<Download size={16} />} onClick={handleExportFile}>Export Data (JSON)</Button>
-          <Button variant="secondary" icon={<Upload size={16} />} onClick={handleImportFile}>Import Data</Button>
+          <Button variant="secondary" icon={<Download size={16} />} onClick={handleExportFile}>{t('settings.export')}</Button>
+          <Button variant="secondary" icon={<Upload size={16} />} onClick={handleImportFile}>{t('settings.import')}</Button>
           <div style={{ flex: 1 }} />
           <Button variant="ghost" icon={<Trash2 size={16} />} onClick={clearData} style={{ color: 'var(--color-danger)' }}>
-            Erase All Data
+            {t('settings.erase')}
           </Button>
         </div>
       </section>

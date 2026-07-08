@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useDatabase } from '../../hooks/useDatabase';
@@ -7,6 +8,7 @@ import { Button, Input, Skeleton } from '../ui';
 import { Search, Plus, Filter } from 'lucide-react';
 
 export function ProjectsView() {
+  const t = useT();
   const { db } = useDatabase();
   const projects = useProjectStore((s) => s.projects);
   const tasks = useProjectStore((s) => s.tasks);
@@ -50,16 +52,16 @@ export function ProjectsView() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem', height: '100%' }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Projects</h1>
+        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{t('projects.title')}</h1>
         <Button variant="primary" icon={<Plus size={18} />} onClick={() => setIsFormOpen(true)}>
-          New Project
+          {t('projects.new')}
         </Button>
       </header>
 
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 300px' }}>
           <Input 
-            placeholder="Search projects..." 
+            placeholder={t('projects.search')} 
             value={search} 
             onChange={(e) => setSearch(e.target.value)}
             icon={<Search size={18} />}
@@ -79,11 +81,11 @@ export function ProjectsView() {
               outline: 'none'
             }}
           >
-            <option value="all">All Statuses</option>
-            <option value="planning">Planning</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
-            <option value="completed">Completed</option>
+            <option value="all">{t('projects.all')}</option>
+            <option value="planning">{t('projects.status.planning')}</option>
+            <option value="active">{t('projects.status.active')}</option>
+            <option value="paused">{t('projects.status.paused')}</option>
+            <option value="completed">{t('projects.status.completed')}</option>
           </select>
         </div>
       </div>
@@ -102,9 +104,9 @@ export function ProjectsView() {
         ) : (
           <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '4rem', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
             <div style={{ fontSize: '3rem' }}>📂</div>
-            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>No projects found</h3>
+            <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{t('projects.none')}</h3>
             <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-              {projects.length === 0 ? "You haven't created any projects yet." : "No projects match your filters."}
+              {projects.length === 0 ? t('projects.none.empty') : t('projects.none.filter')}
             </p>
             {projects.length === 0 && (
               <Button variant="primary" onClick={() => setIsFormOpen(true)} style={{ marginTop: '1rem' }}>

@@ -4,6 +4,7 @@ import { SusanAvatar } from './SusanAvatar';
 import { ChatBubble } from './ChatBubble';
 import { SusanInsights } from './SusanInsights';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useT } from '../../i18n';
 import { Button, Input } from '../ui';
 import { Send, Sunrise, Activity, Zap, Check, X } from 'lucide-react';
 import { CalendarAPI } from '../../services/calendarAPI';
@@ -79,6 +80,7 @@ export function SusanView() {
     setExecutingCall(null);
   };
 
+  const t = useT();
   const isMobile = useMediaQuery('(max-width: 900px)');
 
   return (
@@ -90,7 +92,7 @@ export function SusanView() {
           <div>
             <h1 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Susan AI</h1>
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              {isConfigured ? 'Your personal productivity assistant' : 'Not configured - Please add API key in Settings'}
+              {isConfigured ? t('susan.subtitle') : t('susan.notconfigured')}
             </p>
           </div>
         </header>
@@ -98,9 +100,9 @@ export function SusanView() {
         {/* Quick Actions */}
         {isConfigured && (
           <div style={{ padding: isMobile ? '0.5rem 1rem' : '1rem 1.5rem', display: 'flex', gap: '0.75rem', overflowX: 'auto', borderBottom: '1px solid var(--border-default)' }}>
-            <Button variant="secondary" size="sm" icon={<Sunrise size={14} />} onClick={() => getMorningBriefing()}>Morning Briefing</Button>
-            <Button variant="secondary" size="sm" icon={<Activity size={14} />} onClick={() => analyzeProductivity()}>Analyze Progress</Button>
-            <Button variant="secondary" size="sm" icon={<Zap size={14} />} onClick={() => sendMessage('Give me a quick motivational nudge')}>Motivate Me</Button>
+            <Button variant="secondary" size="sm" icon={<Sunrise size={14} />} onClick={() => getMorningBriefing()}>{t('susan.briefing')}</Button>
+            <Button variant="secondary" size="sm" icon={<Activity size={14} />} onClick={() => analyzeProductivity()}>{t('susan.analyze')}</Button>
+            <Button variant="secondary" size="sm" icon={<Zap size={14} />} onClick={() => sendMessage('Give me a quick motivational nudge')}>{t('susan.motivate')}</Button>
           </div>
         )}
 
@@ -109,8 +111,8 @@ export function SusanView() {
           {messages.length === 0 ? (
             <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-secondary)', maxWidth: '400px' }}>
               <SusanAvatar state="idle" size={80} style={{ margin: '0 auto 1rem auto' }} />
-              <h3>How can I help you today, MrDNX?</h3>
-              <p>I can help you plan your day, analyze your productivity, or break down complex projects into manageable tasks.</p>
+              <h3>{t('susan.greeting')}</h3>
+              <p>{t('susan.greeting.desc')}</p>
             </div>
           ) : (
             messages.map((msg, index) => (
@@ -183,7 +185,7 @@ export function SusanView() {
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isConfigured ? "Ask Susan for help..." : "Please configure Gemini API key in Settings"}
+                placeholder={isConfigured ? t('susan.placeholder') : t('susan.noapikey')}
                 disabled={!isConfigured || isThinking}
               />
             </div>
@@ -193,7 +195,7 @@ export function SusanView() {
               icon={<Send size={18} />} 
               disabled={!inputValue.trim() || isThinking || !isConfigured}
             >
-              Send
+              {t('susan.send')}
             </Button>
           </form>
         </div>

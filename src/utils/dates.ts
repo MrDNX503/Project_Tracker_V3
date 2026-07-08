@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 // ============================================
 // Date Formatting Utilities
 // ============================================
@@ -100,9 +101,9 @@ export function getDayName(dateStr: string): string {
  */
 export function getTimeGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Buenos días';
-  if (hour < 18) return 'Buenas tardes';
-  return 'Buenas noches';
+  if (hour < 12) return t('dash.greeting.morning');
+  if (hour < 18) return t('dash.greeting.afternoon');
+  return t('dash.greeting.evening');
 }
 
 /**

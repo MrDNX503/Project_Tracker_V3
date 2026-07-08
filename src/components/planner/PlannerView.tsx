@@ -9,9 +9,11 @@ import { Button, Input } from '../ui';
 import { RefreshCw, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { addDays, getTodayISO } from '../../utils/dates';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useT } from '../../i18n';
 
 export function PlannerView() {
   const isMobile = useMediaQuery('(max-width: 900px)');
+  const t = useT();
   const { db } = useDatabase();
   const selectedDate = usePlannerStore(s => s.selectedDate);
   const setSelectedDate = usePlannerStore(s => s.setSelectedDate);
@@ -19,7 +21,7 @@ export function PlannerView() {
   const setDailyPlans = usePlannerStore(s => s.setDailyPlans);
   const addDailyPlan = usePlannerStore(s => s.addDailyPlan);
   
-  const { isConnected, isSyncing, syncToday } = useCalendarSync();
+  const { isConnected, isSyncing, syncEvents } = useCalendarSync();
   const calendarEvents = usePlannerStore((st) => st.calendarEvents);
   const [isAdding, setIsAdding] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -39,31 +41,58 @@ export function PlannerView() {
   }, [db, selectedDate, setDailyPlans]);
 
   /**
-   * Sync Google Calendar events and import them into the tracker's
-   * daily plan as read-only calendar blocks (no duplicates: matched
-   * by calendar_event_id).
+   * Sync Google Calendar events for the WHOLE visible week (Mon–Sun of
+   * the selected date) and import them into the planner, each on its
+   * own date. Idempotent: events are matched by calendar_event_id.
    */
   const handleSync = async () => {
-    const events = await syncToday();
-    if (!db || !events || events.length === 0) return;
+    if (!db) return;
 
+    // From Monday of the selected week to +30 days
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const sel = new Date(y, m - 1, d);
+    const dayOfWeek = (sel.getDay() + 6) % 7; // 0 = Monday
+    const weekStart = new Date(y, m - 1, d - dayOfWeek);
+    const weekEnd = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 30);
+
+    const events = await syncEvents(weekStart, weekEnd);
+    console.info('[Planner] Synced events from Google:', events);
+    if (!events || events.length === 0) {
+      alert(t('planner.sync.none'));
+      return;
+    }
+
+    const localYMD = (dt: Date) =>
+      `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
     const hhmm = (iso: string) => {
-      const d = new Date(iso);
-      return isNaN(d.getTime()) ? undefined : `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const dt = new Date(iso);
+      return isNaN(dt.getTime()) ? undefined : `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
     };
 
     try {
-      const today = getTodayISO();
-      const existing = await db.listDailyPlans(today);
+      const existing = await db.listDailyPlansByRange(localYMD(weekStart), localYMD(new Date(weekEnd.getTime() - 1)));
       const known = new Set(existing.map((p) => p.calendar_event_id).filter(Boolean));
 
+      const imported: string[] = [];
       for (const ev of events) {
         if (!ev.id || known.has(ev.id)) continue;
+        // All-day events come as plain YYYY-MM-DD (no time) — use the
+        // date literally; parsing it with new Date() would shift a day
+        // in negative-offset timezones.
+        const isAllDay = !!ev.start && !ev.start.includes('T');
+        let planDate = selectedDate;
+        if (isAllDay) {
+          planDate = ev.start;
+        } else if (ev.start) {
+          const startDt = new Date(ev.start);
+          if (!isNaN(startDt.getTime())) planDate = localYMD(startDt);
+        }
+        imported.push(planDate);
         await db.createDailyPlan({
-          plan_date: today,
+          plan_date: planDate,
           title: ev.summary || '(sin título)',
-          time_start: ev.start ? hhmm(ev.start) ?? null : null,
-          time_end: ev.end ? hhmm(ev.end) ?? null : null,
+          time_start: !isAllDay && ev.start ? hhmm(ev.start) ?? null : null,
+          time_end: !isAllDay && ev.end ? hhmm(ev.end) ?? null : null,
           is_calendar_event: 1,
           calendar_event_id: ev.id,
         });
@@ -72,8 +101,19 @@ export function PlannerView() {
       // Refresh the plans for the date currently on screen
       const plans = await db.listDailyPlans(selectedDate);
       setDailyPlans(plans);
+
+      // Visible summary of what was imported
+      const byDate: Record<string, number> = {};
+      for (const dte of imported) byDate[dte] = (byDate[dte] ?? 0) + 1;
+      const summary = Object.entries(byDate).map(([k, v]) => `${k}: ${v}`).join('\n');
+      alert(
+        imported.length > 0
+          ? `${t('planner.sync.done')} (${imported.length}):\n${summary}`
+          : t('planner.sync.uptodate')
+      );
     } catch (err) {
       console.error('[Planner] Failed to import calendar events:', err);
+      alert(`${t('planner.sync.error')}: ${err instanceof Error ? err.message : err}`);
     }
   };
 
@@ -135,10 +175,10 @@ export function PlannerView() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '2rem', padding: isMobile ? '0.25rem' : '1rem', height: '100%', minHeight: 0 }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Daily Planner</h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>{t('planner.title')}</h1>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             <Button variant="ghost" onClick={handlePrevDay}><ChevronLeft size={20} /></Button>
-            <Button variant="ghost" onClick={handleToday}>Today</Button>
+            <Button variant="ghost" onClick={handleToday}>{t('planner.today')}</Button>
             <Button variant="ghost" onClick={handleNextDay}><ChevronRight size={20} /></Button>
           </div>
           <span style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>{displayDate}</span>
@@ -151,7 +191,7 @@ export function PlannerView() {
             onClick={handleSync}
             disabled={!isConnected || isSyncing}
           >
-            {isConnected ? 'Sync Calendar' : 'Calendar not connected'}
+            {isConnected ? t('planner.sync') : t('planner.notconnected')}
           </Button>
         </div>
       </header>
@@ -167,20 +207,20 @@ export function PlannerView() {
         {/* Sidebar / Add Task */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="glass-card" style={{ padding: '1.5rem' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Schedule Task</h3>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>{t('planner.scheduletask')}</h3>
             {isAdding ? (
               <form onSubmit={handleAddPlan} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <Input 
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Task title"
+                  placeholder={t('planner.tasktitle')}
                   autoFocus
                 />
                 <Input 
                   type="time"
                   value={newTaskTime}
                   onChange={(e) => setNewTaskTime(e.target.value)}
-                  label="Start Time (optional)"
+                  label={t('planner.starttime')}
                 />
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                   <Button variant="ghost" onClick={() => setIsAdding(false)} type="button">Cancel</Button>
@@ -189,16 +229,16 @@ export function PlannerView() {
               </form>
             ) : (
               <Button variant="secondary" icon={<Plus size={16} />} onClick={() => setIsAdding(true)} style={{ width: '100%' }}>
-                Add to Schedule
+                {t('planner.addtoschedule')}
               </Button>
             )}
           </div>
 
-          {calendarEvents.length > 0 && selectedDate === getTodayISO() && (
+          {calendarEvents.filter((ev) => ev.start && ev.start.startsWith('') && new Date(ev.start).toDateString() === new Date(`${selectedDate}T00:00:00`).toDateString()).length > 0 && (
             <div className="glass-card" style={{ padding: '1.5rem' }}>
               <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Google Calendar</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {calendarEvents.map((ev) => {
+                {calendarEvents.filter((ev) => ev.start && new Date(ev.start).toDateString() === new Date(`${selectedDate}T00:00:00`).toDateString()).map((ev) => {
                   const fmt = (iso: string) => {
                     if (!iso) return '';
                     const d = new Date(iso);
@@ -221,7 +261,7 @@ export function PlannerView() {
           )}
 
           <div className="glass-card" style={{ padding: '1.5rem', flex: 1 }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Unscheduled Today</h3>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>{t('planner.unscheduled')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {dailyPlans.filter(p => !p.time_start).length > 0 ? (
                 dailyPlans.filter(p => !p.time_start).map(p => (

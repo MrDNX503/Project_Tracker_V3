@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { type ProgressLog, type Project } from '../../types';
 import { formatRelativeTime } from '../../utils/dates';
 import { MessageSquare, Flame, AlertCircle, Trophy } from 'lucide-react';
@@ -8,8 +9,9 @@ interface ActivityFeedProps {
 }
 
 export function ActivityFeed({ logs, projects }: ActivityFeedProps) {
+  const t = useT();
   if (logs.length === 0) {
-    return <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: '2rem 0' }}>No recent activity.</p>;
+    return <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: '2rem 0' }}>{t('dash.noactivity')}</p>;
   }
 
   const getLogIcon = (type: string) => {

@@ -5,6 +5,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { useDatabase } from '../../hooks/useDatabase';
 import { getProjectStats, calculateStreak } from '../../utils/analytics';
 import { getTimeGreeting, getTodayISO } from '../../utils/dates';
+import { useT } from '../../i18n';
 import { StatsGrid } from './StatsGrid';
 import { ProjectCard } from './ProjectCard';
 import { ActivityFeed } from './ActivityFeed';
@@ -19,6 +20,7 @@ export function DashboardView() {
   const dailyPlans = usePlannerStore((s) => s.dailyPlans);
   const today = getTodayISO();
 
+  const t = useT();
   const [greeting, setGreeting] = useState('');
   const { db } = useDatabase();
   const setProjects = useProjectStore((s) => s.setProjects);
@@ -66,18 +68,18 @@ export function DashboardView() {
             {greeting}, MrDNX <span role="img" aria-label="wave">👋</span>
           </h1>
           <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0 0 0', fontSize: '0.9rem' }}>
-            Ready to make some progress today?
+            {t('dash.ready')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
           <Button variant="secondary" icon={<Calendar size={18} />} onClick={() => setView('planner')}>
-            My Day
+            {t('dash.myday')}
           </Button>
           <Button variant="primary" icon={<Plus size={18} />} onClick={() => {
             setView('projects');
             window.dispatchEvent(new CustomEvent('open-new-project-modal'));
           }}>
-            New Project
+            {t('dash.newproject')}
           </Button>
         </div>
       </header>
@@ -93,8 +95,8 @@ export function DashboardView() {
         {/* Active Projects */}
         <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem', gridColumn: 'span 2' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Active Projects</h2>
-            <Button variant="ghost" onClick={() => setView('projects')}>View All</Button>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>{t('dash.activeprojects')}</h2>
+            <Button variant="ghost" onClick={() => setView('projects')}>{t('dash.viewall')}</Button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {activeProjects.length > 0 ? (
@@ -104,7 +106,7 @@ export function DashboardView() {
               })
             ) : (
               <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-secondary)' }}>No active projects. Start something new!</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{t('dash.noactive')}</p>
               </div>
             )}
           </div>
@@ -114,8 +116,8 @@ export function DashboardView() {
           {/* Today's Schedule */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>Today's Plan</h2>
-              <Button variant="ghost" onClick={() => setView('planner')}>Planner</Button>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: 'var(--text-primary)' }}>{t('dash.todayplan')}</h2>
+              <Button variant="ghost" onClick={() => setView('planner')}>{t('nav.planner')}</Button>
             </div>
             <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {todayPlans.length > 0 ? (
@@ -129,14 +131,14 @@ export function DashboardView() {
                   </div>
                 ))
               ) : (
-                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: '1rem 0' }}>No tasks planned for today.</p>
+                <p style={{ color: 'var(--text-secondary)', textAlign: 'center', margin: '1rem 0' }}>{t('dash.notasks')}</p>
               )}
             </div>
           </div>
 
           {/* Activity Feed */}
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>Recent Activity</h2>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 600, margin: '0 0 1rem 0', color: 'var(--text-primary)' }}>{t('dash.recentactivity')}</h2>
             <div className="glass-card" style={{ padding: '1rem' }}>
                <ActivityFeed logs={progressLogs.slice(0, 5)} projects={projects} />
             </div>

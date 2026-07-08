@@ -9,6 +9,8 @@ import { GOOGLE_CLIENT_ID } from './config';
 import { restoreCalendarToken } from './services/auth';
 import { scheduleBackup } from './services/driveBackup';
 import { useProjectStore } from './store/useProjectStore';
+import { t } from './i18n';
+import { useLangStore } from './i18n';
 import { usePlannerStore } from './store/usePlannerStore';
 import { Layout } from './components/layout';
 import { CommandPalette } from './components/layout/CommandPalette';
@@ -51,6 +53,7 @@ export default function App() {
   const setView = useAppStore((s) => s.setView);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
+  useLangStore((s) => s.lang); // re-render on language change
 
   // Restore Google Calendar token from a previous session
   useEffect(() => {
@@ -152,7 +155,7 @@ export default function App() {
     <Layout
       activeNavItem={currentView}
       onNavigate={(item) => setView(item.id as any)}
-      title={currentView.charAt(0).toUpperCase() + currentView.slice(1)}
+      title={t((`nav.${currentView === 'project-detail' ? 'projects' : currentView}`) as never)}
       onOpenCommandPalette={() => setPaletteOpen(true)}
       onOpenSusan={() => setView('susan')}
       notificationCount={1}

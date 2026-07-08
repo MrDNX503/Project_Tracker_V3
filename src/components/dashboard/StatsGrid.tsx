@@ -1,3 +1,4 @@
+import { t } from '../../i18n';
 import { Briefcase, ListTodo, Target, Flame } from 'lucide-react';
 
 interface StatsGridProps {
@@ -10,25 +11,25 @@ interface StatsGridProps {
 export function StatsGrid({ activeProjects, todayTasks, avgProgress, streak }: StatsGridProps) {
   const stats = [
     {
-      label: 'Active Projects',
+      label: t('dash.activeprojects'),
       value: activeProjects,
       icon: <Briefcase size={24} color="var(--accent-cyan, #00d4ff)" />,
       color: 'var(--accent-cyan, #00d4ff)'
     },
     {
-      label: 'Tasks Today',
+      label: t('dash.todaytasks'),
       value: todayTasks,
       icon: <ListTodo size={24} color="var(--accent-violet, #8b5cf6)" />,
       color: 'var(--accent-violet, #8b5cf6)'
     },
     {
-      label: 'Avg Progress',
+      label: t('dash.avgprogress'),
       value: `${avgProgress}%`,
       icon: <Target size={24} color="var(--color-success, #10b981)" />,
       color: 'var(--color-success, #10b981)'
     },
     {
-      label: 'Current Streak',
+      label: t('dash.streak'),
       value: `${streak} Days`,
       icon: <Flame size={24} color="var(--color-warning, #f59e0b)" />,
       color: 'var(--color-warning, #f59e0b)'

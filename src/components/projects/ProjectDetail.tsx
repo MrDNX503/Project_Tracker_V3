@@ -1,17 +1,37 @@
 import { useState } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAppStore } from '../../store/useAppStore';
+import { useDatabase } from '../../hooks/useDatabase';
 import { ProgressRing, Badge, Button } from '../ui';
-import { ArrowLeft, Plus, CheckCircle2, Calendar } from 'lucide-react';
+import { ArrowLeft, Plus, CheckCircle2, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { TaskList } from './TaskList';
 import { ProgressLogger } from './ProgressLogger';
 import { MilestoneList } from './MilestoneList';
+import { ProjectForm } from './ProjectForm';
+import { useT } from '../../i18n';
 
 type Tab = 'tasks' | 'milestones' | 'logs' | 'settings';
 
 export function ProjectDetail() {
+  const t = useT();
+  const { db } = useDatabase();
   const selectedProjectId = useAppStore(s => s.selectedProjectId);
   const setView = useAppStore(s => s.setView);
+  const removeProject = useProjectStore(s => s.removeProject);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleDeleteProject = async (projectId: string, projectName: string) => {
+    if (!db) return;
+    if (!window.confirm(`¿Eliminar el proyecto "${projectName}"? Se borrarán también sus tareas, objetivos y registros. Esta acción no se puede deshacer.`)) return;
+    try {
+      await db.deleteProject(projectId);
+      removeProject(projectId);
+      setView('projects');
+    } catch (err) {
+      console.error(err);
+      alert('No se pudo eliminar el proyecto.');
+    }
+  };
   
   const projects = useProjectStore(s => s.projects);
   const tasks = useProjectStore(s => s.tasks);
@@ -29,8 +49,8 @@ export function ProjectDetail() {
   if (!project) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>Project not found.</p>
-        <Button onClick={() => setView('projects')}>Back to Projects</Button>
+        <p>{t('projects.notfound')}</p>
+        <Button onClick={() => setView('projects')}>{t('projects.back')}</Button>
       </div>
     );
   }
@@ -64,7 +84,7 @@ export function ProjectDetail() {
         </div>
 
         <p style={{ margin: 0, color: 'var(--text-secondary)' }}>
-          {project.description || 'No description provided.'}
+          {project.description || t('projects.nodesc')}
         </p>
 
         <div style={{ display: 'flex', gap: '1.5rem', borderTop: '1px solid var(--border-default)', paddingTop: '1rem', flexWrap: 'wrap' }}>
@@ -75,7 +95,7 @@ export function ProjectDetail() {
           {project.target_date && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
               <Calendar size={16} />
-              <span>Due: {project.target_date.split('T')[0]}</span>
+              <span>{t('projects.due')}: {project.target_date.split('T')[0]}</span>
             </div>
           )}
         </div>
@@ -98,7 +118,7 @@ export function ProjectDetail() {
               textTransform: 'capitalize'
             }}
           >
-            {tab}
+            {t((`projects.tab.${tab}`) as any)}
           </button>
         ))}
       </div>
@@ -107,11 +127,38 @@ export function ProjectDetail() {
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '2rem' }}>
         {activeTab === 'tasks' && <TaskList projectId={project.id} tasks={projectTasks} />}
         {activeTab === 'milestones' && <MilestoneList projectId={project.id} milestones={projectMilestones} />}
+        {activeTab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '600px' }}>
+            <div className="glass-card" style={{ padding: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>{t('projects.edit.section')}</h2>
+              <p style={{ margin: '0 0 1rem 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                {t('projects.edit.desc')}
+              </p>
+              <Button variant="primary" icon={<Pencil size={16} />} onClick={() => setIsEditing(true)}>
+                {t('projects.edit.btn')}
+              </Button>
+            </div>
+
+            <div className="glass-card" style={{ padding: '1.5rem', border: '1px solid var(--color-danger)' }}>
+              <h2 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem 0', color: 'var(--color-danger)' }}>{t('projects.danger')}</h2>
+              <p style={{ margin: '0 0 1rem 0', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                {t('projects.danger.desc')}
+              </p>
+              <Button variant="ghost" icon={<Trash2 size={16} />} style={{ color: 'var(--color-danger)' }}
+                onClick={() => handleDeleteProject(project.id, project.name)}>
+                {t('projects.delete')}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {isEditing && <ProjectForm project={project} onClose={() => setIsEditing(false)} />}
+
         {activeTab === 'logs' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Progress Logs</h2>
-              <Button icon={<Plus size={16} />} onClick={() => setIsLogging(true)}>Log Progress</Button>
+              <h2 style={{ fontSize: '1.25rem', margin: 0 }}>{t('logs.title')}</h2>
+              <Button icon={<Plus size={16} />} onClick={() => setIsLogging(true)}>{t('logs.add')}</Button>
             </div>
             
             {isLogging && (
@@ -136,7 +183,7 @@ export function ProjectDetail() {
                   </div>
                 ))
               ) : (
-                <p style={{ color: 'var(--text-secondary)' }}>No progress logged yet.</p>
+                <p style={{ color: 'var(--text-secondary)' }}>{t('logs.none')}</p>
               )}
             </div>
           </div>

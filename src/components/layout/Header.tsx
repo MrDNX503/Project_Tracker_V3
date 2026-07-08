@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { useState, type CSSProperties } from 'react';
 import {
   Search,
@@ -152,6 +153,7 @@ export function Header({
   onNotificationClick,
   onMenuToggle,
 }: HeaderProps) {
+  const t = useT();
   const { themeMode, cycleTheme } = useTheme();
   const [searchFocused] = useState(false);
 
@@ -212,7 +214,7 @@ export function Header({
         >
           <Search size={15} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} aria-hidden="true" />
           <span style={{ ...searchInputStyle, color: 'var(--text-tertiary)' }}>
-            Search...
+            {t('header.search')}
           </span>
           <kbd style={kbdStyle}>
             <Command size={10} /> K

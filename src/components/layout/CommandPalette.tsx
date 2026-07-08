@@ -2,6 +2,7 @@
    KashFinance Project Tracker V3 — Command Palette Component
    ============================================================ */
 
+import { useT, t } from '../../i18n';
 import {
   useState,
   useEffect,
@@ -119,7 +120,7 @@ function getDefaultActions(onCreateProject?: () => void): CommandItem[] {
     {
       id: 'action-new-project',
       type: 'action',
-      label: 'New Project',
+      label: t('projects.new'),
       description: 'Create a new project',
       icon: <Plus size={16} />,
       onSelect: () => onCreateProject?.(),
@@ -263,6 +264,7 @@ export function CommandPalette({
   onNavigate,
   onCreateProject,
 }: CommandPaletteProps) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -443,7 +445,7 @@ export function CommandPalette({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type a command or search..."
+            placeholder={t('header.cmdplaceholder')}
             style={searchInputStyle}
             aria-label="Search commands"
             aria-activedescendant={flatItems[activeIndex]?.id}
@@ -457,7 +459,7 @@ export function CommandPalette({
         <div ref={listRef} style={resultsAreaStyle} role="listbox" id="command-results">
           {groups.length === 0 ? (
             <div style={emptyStyle}>
-              <p>No results found for &ldquo;{query}&rdquo;</p>
+              <p>{t('header.noresults')} &ldquo;{query}&rdquo;</p>
             </div>
           ) : (
             groups.map((group) => (

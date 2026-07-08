@@ -1,3 +1,4 @@
+import { useT } from '../../i18n';
 import { useState } from 'react';
 import { useDatabase } from '../../hooks/useDatabase';
 import { useProjectStore } from '../../store/useProjectStore';
@@ -5,6 +6,7 @@ import { Button } from '../ui';
 import type { ProgressLog } from '../../types';
 
 export function ProgressLogger({ projectId, onClose }: { projectId: string; onClose: () => void }) {
+  const t = useT();
   const { db } = useDatabase();
   const addLog = useProjectStore(s => s.addProgressLog);
   
@@ -48,7 +50,7 @@ export function ProgressLogger({ projectId, onClose }: { projectId: string; onCl
       <textarea 
         value={content}
         onChange={e => setContent(e.target.value)}
-        placeholder="What did you work on today?"
+        placeholder={t('logs.placeholder')}
         style={{
           width: '100%',
           padding: '0.75rem',
@@ -64,7 +66,7 @@ export function ProgressLogger({ projectId, onClose }: { projectId: string; onCl
       
       <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '200px' }}>
-          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Mood / Energy</label>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>{t('logs.mood')}</label>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {moods.map(m => (
               <button
@@ -89,7 +91,7 @@ export function ProgressLogger({ projectId, onClose }: { projectId: string; onCl
         </div>
         
         <div>
-          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>Hours (optional)</label>
+          <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>{t('logs.hours')}</label>
           <input 
             type="number" 
             step="0.5"
@@ -110,8 +112,8 @@ export function ProgressLogger({ projectId, onClose }: { projectId: string; onCl
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '0.5rem' }}>
-        <Button variant="ghost" onClick={onClose} type="button">Cancel</Button>
-        <Button variant="primary" type="submit" loading={isSubmitting}>Save Log</Button>
+        <Button variant="ghost" onClick={onClose} type="button">{t('common.cancel')}</Button>
+        <Button variant="primary" type="submit" loading={isSubmitting}>{t('logs.save')}</Button>
       </div>
     </form>
   );

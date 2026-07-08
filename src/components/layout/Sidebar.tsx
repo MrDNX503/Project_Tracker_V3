@@ -2,6 +2,7 @@
    KashFinance Project Tracker V3 — Sidebar Component
    ============================================================ */
 
+import { useT } from '../../i18n';
 import { useCallback, type CSSProperties } from 'react';
 import {
   LayoutDashboard,
@@ -35,15 +36,15 @@ export interface SidebarProps {
 /* ── Navigation Config ── */
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
-  { id: 'projects', label: 'Projects', icon: <FolderKanban size={20} />, path: '/projects' },
-  { id: 'planner', label: 'Planner', icon: <CalendarDays size={20} />, path: '/planner' },
-  { id: 'susan', label: 'Susan AI', icon: <Sparkles size={20} />, path: '/susan' },
-  { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={20} />, path: '/analytics' },
+  { id: 'dashboard', label: 'nav.dashboard', icon: <LayoutDashboard size={20} />, path: '/' },
+  { id: 'projects', label: 'nav.projects', icon: <FolderKanban size={20} />, path: '/projects' },
+  { id: 'planner', label: 'nav.planner', icon: <CalendarDays size={20} />, path: '/planner' },
+  { id: 'susan', label: 'nav.susan', icon: <Sparkles size={20} />, path: '/susan' },
+  { id: 'analytics', label: 'nav.analytics', icon: <BarChart3 size={20} />, path: '/analytics' },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [
-  { id: 'settings', label: 'Settings', icon: <Settings size={20} />, path: '/settings' },
+  { id: 'settings', label: 'nav.settings', icon: <Settings size={20} />, path: '/settings' },
 ];
 
 /* ── Styles ── */
@@ -199,6 +200,7 @@ export function Sidebar({
   onToggle,
   isMobile = false,
 }: SidebarProps) {
+  const t = useT();
   const handleNavClick = useCallback(
     (item: NavItem) => {
       onNavigate?.(item);
@@ -233,7 +235,7 @@ export function Sidebar({
           }
         }}
         aria-current={isActive ? 'page' : undefined}
-        aria-label={item.label}
+        aria-label={t(item.label as any)}
       >
         {isActive && <span style={activeGlow} aria-hidden="true" />}
         <span style={{ display: 'flex', flexShrink: 0 }}>{item.icon}</span>
@@ -244,14 +246,14 @@ export function Sidebar({
             overflow: 'hidden',
           }}
         >
-          {item.label}
+          {t(item.label as any)}
         </span>
       </button>
     );
 
     if (!expanded && !isMobile) {
       return (
-        <Tooltip key={item.id} content={item.label} position="right" delay={100}>
+        <Tooltip key={item.id} content={t(item.label as any)} position="right" delay={100}>
           {button}
         </Tooltip>
       );
@@ -328,14 +330,14 @@ export function Sidebar({
         {/* Susan avatar */}
         <div
           style={susanAvatarStyle}
-          onClick={() => handleNavClick({ id: 'susan', label: 'Susan AI', icon: <Sparkles size={20} />, path: '/susan' })}
+          onClick={() => handleNavClick({ id: 'susan', label: 'nav.susan', icon: <Sparkles size={20} />, path: '/susan' })}
           role="button"
           tabIndex={0}
           aria-label="Talk to Susan AI"
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              handleNavClick({ id: 'susan', label: 'Susan AI', icon: <Sparkles size={20} />, path: '/susan' });
+              handleNavClick({ id: 'susan', label: 'nav.susan', icon: <Sparkles size={20} />, path: '/susan' });
             }
           }}
           onMouseEnter={(e) => {
