@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useAppStore } from '../../store/useAppStore';
 import { useDatabase } from '../../hooks/useDatabase';
@@ -37,6 +37,42 @@ export function ProjectDetail() {
   const tasks = useProjectStore(s => s.tasks);
   const milestones = useProjectStore(s => s.milestones);
   const progressLogs = useProjectStore(s => s.progressLogs);
+  const setProjects = useProjectStore(s => s.setProjects);
+  const setTasks = useProjectStore(s => s.setTasks);
+  const setMilestones = useProjectStore(s => s.setMilestones);
+  const setProgressLogs = useProjectStore(s => s.setProgressLogs);
+
+  // Load this project's data from the database every time the view opens.
+  // The stores are just an in-memory cache — SQLite is the source of truth.
+  useEffect(() => {
+    if (!db || !selectedProjectId) return;
+    (async () => {
+      try {
+        const [projs, projTasks, projMilestones, projLogs] = [
+          await db.listProjects(),
+          await db.listTasks({ project_id: selectedProjectId }),
+          await db.listMilestones(selectedProjectId),
+          await db.listProgressLogsByProject(selectedProjectId),
+        ];
+        setProjects(projs);
+        // Merge: replace this project's items, keep the rest
+        setTasks([
+          ...useProjectStore.getState().tasks.filter(t => t.project_id !== selectedProjectId),
+          ...projTasks,
+        ]);
+        setMilestones([
+          ...useProjectStore.getState().milestones.filter(m => m.project_id !== selectedProjectId),
+          ...projMilestones,
+        ]);
+        setProgressLogs([
+          ...useProjectStore.getState().progressLogs.filter(l => l.project_id !== selectedProjectId),
+          ...projLogs,
+        ]);
+      } catch (err) {
+        console.error('[ProjectDetail] Failed to load project data:', err);
+      }
+    })();
+  }, [db, selectedProjectId, setProjects, setTasks, setMilestones, setProgressLogs]);
 
   const [activeTab, setActiveTab] = useState<Tab>('tasks');
   const [isLogging, setIsLogging] = useState(false);

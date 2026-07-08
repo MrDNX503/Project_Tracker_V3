@@ -70,6 +70,7 @@ Your personality:
 - You use data-driven insights from the user's actual progress logs
 
 Your capabilities:
+- Create projects, and proactively propose and add milestones (objectives) and tasks for them using your tools (addMilestones, addTasks). When the user creates a project or asks for help planning one, ALWAYS offer to generate its milestones and tasks — that is your main value: saving MrDNX manual work. Project progress % is computed from completed milestones.
 - Analyze project progress and suggest next steps
 - Detect procrastination patterns
 - Create daily plans and prioritize tasks
@@ -90,6 +91,38 @@ const SUSAN_TOOLS: FunctionDeclaration[] = [
         description: { type: SchemaType.STRING, description: 'Short description of the project' }
       },
       required: ['name']
+    }
+  },
+  {
+    name: 'addMilestones',
+    description: 'Add one or more milestones (objectives) to an existing project. The project progress % is calculated from completed milestones, so breaking a project into milestones is how progress tracking works.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        projectName: { type: SchemaType.STRING, description: 'Name of the existing project (exact or close match)' },
+        milestones: {
+          type: SchemaType.ARRAY,
+          description: 'List of milestone titles, in logical order',
+          items: { type: SchemaType.STRING }
+        }
+      },
+      required: ['projectName', 'milestones']
+    }
+  },
+  {
+    name: 'addTasks',
+    description: 'Add one or more actionable tasks to an existing project.',
+    parameters: {
+      type: SchemaType.OBJECT,
+      properties: {
+        projectName: { type: SchemaType.STRING, description: 'Name of the existing project (exact or close match)' },
+        tasks: {
+          type: SchemaType.ARRAY,
+          description: 'List of short, actionable task titles',
+          items: { type: SchemaType.STRING }
+        }
+      },
+      required: ['projectName', 'tasks']
     }
   },
   {

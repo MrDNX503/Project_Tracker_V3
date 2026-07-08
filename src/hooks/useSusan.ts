@@ -2,8 +2,9 @@
 // Susan AI Interaction Hook
 // ============================================
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useSusanStore } from '../store/useSusanStore';
+import { useDatabase } from './useDatabase';
 import { useProjectStore } from '../store/useProjectStore';
 import { usePlannerStore } from '../store/usePlannerStore';
 import * as susanAI from '../services/susanAI';
@@ -14,7 +15,9 @@ import { getTodayISO, daysBetween } from '../utils/dates';
  * Hook for interacting with Susan AI
  */
 export function useSusan() {
+  const { db } = useDatabase();
   const addMessage = useSusanStore((s) => s.addMessage);
+  const setMessages = useSusanStore((s) => s.setMessages);
   const setIsThinking = useSusanStore((s) => s.setIsThinking);
   const setLatestAnalysis = useSusanStore((s) => s.setLatestAnalysis);
   const setMorningBriefing = useSusanStore((s) => s.setMorningBriefing);
@@ -23,6 +26,35 @@ export function useSusan() {
   const isPanelOpen = useSusanStore((s) => s.isPanelOpen);
   const togglePanel = useSusanStore((s) => s.togglePanel);
   const apiKey = useSusanStore((s) => s.apiKey);
+
+  // Load chat history from the database once
+  useEffect(() => {
+    if (!db) return;
+    (async () => {
+      try {
+        if (useSusanStore.getState().messages.length > 0) return;
+        const history = await db.getSusanHistory(50);
+        if (history.length > 0) {
+          setMessages(history.map((h) => ({
+            id: h.id,
+            role: h.role,
+            content: h.content,
+            timestamp: h.created_at,
+          })));
+        }
+      } catch (err) {
+        console.error('[Susan] Failed to load chat history:', err);
+      }
+    })();
+  }, [db, setMessages]);
+
+  /** Persist a chat message (fire-and-forget) */
+  const persistMessage = useCallback((role: 'user' | 'susan', content: string) => {
+    if (!db || !content) return;
+    db.saveSusanMessage({ role, content }).catch((err) =>
+      console.warn('[Susan] Could not persist message:', err)
+    );
+  }, [db]);
 
   const projects = useProjectStore((s) => s.projects);
   const tasks = useProjectStore((s) => s.tasks);
@@ -86,6 +118,7 @@ export function useSusan() {
     };
 
     addMessage(userMessage);
+    persistMessage('user', text);
     setIsThinking(true);
 
     try {
@@ -106,6 +139,7 @@ export function useSusan() {
       };
 
       addMessage(susanMessage);
+      persistMessage('susan', susanMessage.content);
     } catch (error) {
       const errorMsg: SusanMessage = {
         id: crypto.randomUUID(),
@@ -122,7 +156,7 @@ export function useSusan() {
     } finally {
       setIsThinking(false);
     }
-  }, [addMessage, setIsThinking, buildContext]);
+  }, [addMessage, setIsThinking, buildContext, persistMessage]);
 
   /**
    * Get morning briefing
@@ -185,6 +219,7 @@ export function useSusan() {
       };
 
       addMessage(susanMessage);
+      persistMessage('susan', susanMessage.content);
     } catch (error) {
       console.error(error);
     } finally {

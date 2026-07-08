@@ -7,26 +7,26 @@ import { create } from 'zustand';
 export type AppView = 'dashboard' | 'projects' | 'project-detail' | 'planner' | 'susan' | 'analytics' | 'settings';
 
 // --- Session navigation persistence -------------------------------
-// sessionStorage survives minimizing / switching apps (PWA included)
-// but is cleared when the app/tab is fully closed — exactly the
-// "resume where I left off unless I quit" behavior we want.
+// localStorage: on Android the OS can kill the PWA process even when
+// just switching apps, which wipes sessionStorage. localStorage makes
+// the app always resume where you left it.
 const NAV_VIEW_KEY = 'kash_nav_view';
 const NAV_PROJECT_KEY = 'kash_nav_project';
 
 function getInitialView(): AppView {
-  const v = sessionStorage.getItem(NAV_VIEW_KEY) as AppView | null;
+  const v = localStorage.getItem(NAV_VIEW_KEY) as AppView | null;
   const valid: AppView[] = ['dashboard', 'projects', 'project-detail', 'planner', 'susan', 'analytics', 'settings'];
   return v && valid.includes(v) ? v : 'dashboard';
 }
 
 function getInitialProject(): string | null {
-  return sessionStorage.getItem(NAV_PROJECT_KEY);
+  return localStorage.getItem(NAV_PROJECT_KEY);
 }
 
 function persistNav(view: AppView, projectId: string | null): void {
-  sessionStorage.setItem(NAV_VIEW_KEY, view);
-  if (projectId) sessionStorage.setItem(NAV_PROJECT_KEY, projectId);
-  else sessionStorage.removeItem(NAV_PROJECT_KEY);
+  localStorage.setItem(NAV_VIEW_KEY, view);
+  if (projectId) localStorage.setItem(NAV_PROJECT_KEY, projectId);
+  else localStorage.removeItem(NAV_PROJECT_KEY);
 }
 
 interface AppState {
@@ -80,7 +80,7 @@ export const useAppStore = create<AppState>((set) => ({
     set({ currentView: view, selectedProjectId: null });
   },
   selectProject: (projectId) => {
-    if (projectId) sessionStorage.setItem(NAV_PROJECT_KEY, projectId);
+    if (projectId) localStorage.setItem(NAV_PROJECT_KEY, projectId);
     set({ selectedProjectId: projectId });
   },
   openProjectDetail: (projectId) => {

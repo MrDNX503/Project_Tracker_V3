@@ -57,6 +57,32 @@ export function SusanView() {
           setProjects(p);
         }
         await handleFunctionResponse(call.name, { status: 'success', message: 'Project created successfully' });
+      } else if (call.name === 'addMilestones' || call.name === 'addTasks') {
+        if (!db) throw new Error('Database not ready');
+        const { projectName } = call.args;
+        const allProjects = await db.listProjects({});
+        const target = allProjects.find(p => p.name.toLowerCase() === String(projectName).toLowerCase())
+          ?? allProjects.find(p => p.name.toLowerCase().includes(String(projectName).toLowerCase()));
+        if (!target) {
+          await handleFunctionResponse(call.name, { status: 'error', message: `Project "${projectName}" not found` });
+        } else if (call.name === 'addMilestones') {
+          const titles: string[] = call.args.milestones ?? [];
+          for (const title of titles) {
+            await db.createMilestone({ project_id: target.id, title, status: 'pending' });
+          }
+          // Recalculate progress: completed / total milestones
+          const all = await db.listMilestones(target.id);
+          const done = all.filter(mm => mm.status === 'completed').length;
+          await db.updateProject(target.id, { progress: all.length ? Math.round((done / all.length) * 100) : 0 });
+          setProjects(await db.listProjects({}));
+          await handleFunctionResponse(call.name, { status: 'success', message: `${titles.length} milestones added to "${target.name}"` });
+        } else {
+          const titles: string[] = call.args.tasks ?? [];
+          for (const title of titles) {
+            await db.createTask({ project_id: target.id, title, status: 'todo', priority: 3 });
+          }
+          await handleFunctionResponse(call.name, { status: 'success', message: `${titles.length} tasks added to "${target.name}"` });
+        }
       } else if (call.name === 'scheduleCalendarEvent') {
         const { title, startTime, endTime, description } = call.args;
         if (!CalendarAPI.hasToken()) {

@@ -1,5 +1,6 @@
 import { t } from '../../i18n';
 import { Briefcase, ListTodo, Target, Flame } from 'lucide-react';
+import { useAppStore, type AppView } from '../../store/useAppStore';
 
 interface StatsGridProps {
   activeProjects: number;
@@ -9,37 +10,50 @@ interface StatsGridProps {
 }
 
 export function StatsGrid({ activeProjects, todayTasks, avgProgress, streak }: StatsGridProps) {
+  const setView = useAppStore((s) => s.setView);
   const stats = [
     {
       label: t('dash.activeprojects'),
       value: activeProjects,
       icon: <Briefcase size={24} color="var(--accent-cyan, #00d4ff)" />,
-      color: 'var(--accent-cyan, #00d4ff)'
+      color: 'var(--accent-cyan, #00d4ff)',
+      target: 'projects' as AppView,
     },
     {
       label: t('dash.todaytasks'),
       value: todayTasks,
       icon: <ListTodo size={24} color="var(--accent-violet, #8b5cf6)" />,
-      color: 'var(--accent-violet, #8b5cf6)'
+      color: 'var(--accent-violet, #8b5cf6)',
+      target: 'planner' as AppView,
     },
     {
       label: t('dash.avgprogress'),
       value: `${avgProgress}%`,
       icon: <Target size={24} color="var(--color-success, #10b981)" />,
-      color: 'var(--color-success, #10b981)'
+      color: 'var(--color-success, #10b981)',
+      target: 'analytics' as AppView,
     },
     {
       label: t('dash.streak'),
       value: `${streak} Days`,
       icon: <Flame size={24} color="var(--color-warning, #f59e0b)" />,
-      color: 'var(--color-warning, #f59e0b)'
+      color: 'var(--color-warning, #f59e0b)',
+      target: 'analytics' as AppView,
     },
   ];
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
       {stats.map((stat, i) => (
-        <div key={i} className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div
+          key={i}
+          className="glass-card glass-hover"
+          role="button"
+          tabIndex={0}
+          onClick={() => setView(stat.target)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setView(stat.target); }}
+          style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+        >
           <div style={{ 
             padding: '1rem', 
             borderRadius: '12px', 
